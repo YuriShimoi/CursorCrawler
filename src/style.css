@@ -188,6 +188,7 @@ kbd {
 }
 
 #hud .depth b  { color: #50fa7b; }
+#hud .depth b.boss { color: #ff5555; }
 
 /* popover: icon-only speech bubble above the hero; Gui.popover places it on whole pixels */
 #popover {
@@ -203,6 +204,7 @@ kbd {
   gap: 2px;
   font-size: 0.9rem;
   color: #50fa7b;
+  white-space: nowrap;
   background-color: #212121;
   border: 1px solid #50fa7b;
   border-radius: 3px;
@@ -212,6 +214,8 @@ kbd {
 
 /* tail: border-colored triangle, and the same fill-colored one 2px higher so it
    covers the bottom border and overlaps the body (no seam), leaving ~1px edges */
+#popover span { margin-left: 4px; }
+
 #popover::before,
 #popover::after {
   content: '';

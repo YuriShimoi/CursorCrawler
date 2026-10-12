@@ -164,12 +164,11 @@ class Enemy extends Actor {
   static PAUSE = {chase: 0.3, wander: 1.2}; // s between dashes
   static DIRS  = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   static DIAGONALS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
-  static HP_FLOORS = {first: 5, every: 10}; // +1 hp on floor 5, then 15, 25...
+  static HP_FLOORS = 10; // +1 hp every this many floors: 10, 20, 30...
 
-  /** Extra hp at the current floor; none outside a run (docs) */
-  static extraHp(depth=globalThis.Game?.depth ?? 0) {
-    const {first, every} = Enemy.HP_FLOORS;
-    return depth < first? 0: 1 + Math.floor((depth - first) / every);
+  /** Extra hp at the current floor; none on pages without Game (a class isn't on globalThis, so check the binding) */
+  static extraHp(depth=typeof Game === 'undefined'? 0: Game.depth) {
+    return Math.floor(depth / Enemy.HP_FLOORS);
   }
 
   /** @param {number} tier - Actor.tier: +1 damage every 2 tiers (hp grows with Enemy.extraHp) */

@@ -36,8 +36,9 @@ class Gui {
     Gui.$depth    = document.getElementById('hud-depth');
     Gui.$controls = document.getElementById('controls');
     Gui.$menuControls = document.getElementById('menu-controls');
-    // same list as the in-game controls bubble, shown on the start and death screens
-    Gui.$menuControls.innerHTML = Gui.$controls.innerHTML;
+    // same list as the in-game controls bubble, shown on the start and death screens (missing on the docs pages)
+    if(Gui.$menuControls) Gui.$menuControls.innerHTML = Gui.$controls.innerHTML;
+    else Gui.$menuControls = {};
     Gui.$popover  = document.getElementById('popover');
     Gui.$vignette = document.getElementById('vignette');
 
@@ -126,8 +127,10 @@ class Gui {
     Gui.$bombs.textContent = bombs;
   }
 
+  /** Floor number, red on boss floors; the credits room passes its name */
   static floor(depth) {
     Gui.$depth.textContent = depth;
+    Gui.$depth.classList.toggle('boss', typeof depth === 'number' && depth % Floor.BOSS_EVERY === 0);
   }
 
   /** Boss health bar with the boss's own name, hidden when null */
@@ -153,13 +156,13 @@ class Gui {
     if(!target) return;
 
     const items = target.items?.map(g => `${g.sprite}${g.amount}`).join() ?? '';
-    const id = `${target.icon}|${items}|${target.enabled}`;
+    const id = `${target.icon}|${target.text}|${items}|${target.enabled}`;
     if(Gui.$popover.dataset.id !== id) {
       Gui.$popover.dataset.id = id;
       // shop chests list their goods (sprite and amount) instead of an icon
       Gui.$popover.innerHTML = target.items?
         target.items.map(g => `<img class="icon" src="${Sprites.src(g.sprite)}" alt="">${g.amount > 1? `<b>${g.amount}</b>`: ''}`).join(''):
-        `<i class="fa-solid ${target.icon}"></i>`;
+        `<i class="fa-solid ${target.icon}"></i>${target.text? `<span>${target.text}</span>`: ''}`;
       Gui.$popover.classList.toggle('disabled', !target.enabled);
       // even width so the tail centers on a whole pixel
       Gui.$popover.style.width = '';

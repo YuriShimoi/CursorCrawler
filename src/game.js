@@ -45,6 +45,7 @@ class Game {
   static arena        = null; // boss room on boss floors
   static arenaSeal    = null; // {x, y, tile} passages walled up while fighting the boss
   static descending   = false;
+  static credits      = false; // in the credits room (Credits), shown once per run
   static shop         = null; // open Shop, holding the dungeon floor and entities in .saved
   static buildFloor   = null; // test hook: (cols, rows, start, depth) => {floor, entities, actors, arena}
 
@@ -154,6 +155,7 @@ class Game {
     // health counts half hearts: 6 is three hearts
     Game.stats = {hp: 3, maxHp: 3, gold: 0, keys: 0, bombs: 1, ...stats};
     Game.depth = depth - 1;
+    Game.credits = false;
     Game.invulnerable = 0;
     Game.descending = false;
     Game.darkness(true);
@@ -189,6 +191,27 @@ class Game {
     Game.drawFloor();
     Gui.floor(Game.depth);
     if(Game.boss) Game.float('something watches you', Game.hero.x, Game.hero.y - 20, '#ff5555');
+  }
+
+  /** Credits room in place of the next floor, the depth stays until its door */
+  static showCredits(cols, rows) {
+    Game.credits = true;
+    Game.target = null;
+    Game.clearCombat();
+    const {floor, entities, box} = Credits.build(cols, rows, Game.depth);
+    Game.floor = floor;
+    Game.light = new Light(cols * Floor.TILE, rows * Floor.TILE, Game.LIGHT_RADIUS);
+    Game.hero.placeIn(floor.start.x, floor.start.y);
+    Game.entities = entities;
+    Game.actors = [];
+    Game.goblinFloor = false;
+    Game.arena = box;
+    Game.arenaSeal = null;
+    Game.bossSeen = false;
+    Game.floor.sealed = false;
+
+    Game.drawFloor();
+    Gui.floor('CREDITS');
   }
 
   static get boss() {
@@ -400,6 +423,7 @@ class Game {
       // leftovers lie on the floor, under the props
       Effects.drawDecals(ctx);
       entities.forEach(e => e.alive && e.draw(e.wall? wctx: ctx, floor));
+      if(floor.credits) Credits.draw(ctx, floor.credits);
     });
 
     if(!Game.shop) return;
@@ -524,6 +548,10 @@ class Game {
         if(e.opened) return null;
         // the bubble shows the goods inside instead of an icon
         return {action: 'buy', items: e.items, enabled: stats.gold >= e.price, entity: e};
+      case 'link':
+        return {action: 'link', icon: 'fa-arrow-up-right-from-square', text: e.label, enabled: true, entity: e};
+      case 'creditsDoor':
+        return {action: 'infinite', icon: 'fa-door-open', text: 'keep on infinite mode', enabled: true, entity: e};
       case 'shopFire':
         if(!e.uses) return null;
         return {action: 'heal', icon: 'fa-heart', enabled: stats.gold >= e.price && stats.hp < stats.maxHp, entity: e};
@@ -566,7 +594,21 @@ class Game {
         Sound.play('stairs');
         Game.descending = true;
         Gui.fade(() => {
-          Game.descend(floor.cols, floor.rows, floor.end);
+          if(Game.depth === Credits.AFTER && !Game.credits) Game.showCredits(floor.cols, floor.rows);
+          else Game.descend(floor.cols, floor.rows, floor.end);
+          Game.descending = false;
+        }, Gui.FAST_FADE);
+        break;
+
+      case 'link':
+        window.open(e.url, '_blank');
+        break;
+
+      case 'infinite':
+        Sound.play('stairs');
+        Game.descending = true;
+        Gui.fade(() => {
+          Game.descend(floor.cols, floor.rows, {x: e.tx, y: e.ty});
           Game.descending = false;
         }, Gui.FAST_FADE);
         break;

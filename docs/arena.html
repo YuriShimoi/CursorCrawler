@@ -186,6 +186,7 @@
   <script src="../src/bosses.js"></script>
   <script src="../src/populate.js"></script>
   <script src="../src/shop.js"></script>
+  <script src="../src/credits.js"></script>
   <script src="../src/gui.js"></script>
   <script src="../src/sound.js"></script>
   <script src="../src/effects.js"></script>
@@ -283,6 +284,8 @@
       static describe() {
         const tier = Actor.tier(Test.depth);
         const {kind, boss} = Test.chosen;
+        // enemy hp reads the floor from Game.depth (Enemy.extraHp); a new run sets it again
+        Game.depth = Test.depth;
         const actor = new kind(0, 0, tier);
         Test.$info.textContent = `tier ${tier} · ${boss? actor.name: actor.sprite} ${actor.maxHp} hp · hits for ${actor.damage} half hearts`;
       }

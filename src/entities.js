@@ -23,7 +23,9 @@ class Entity {
     crack   : {sprite: 'crackedWall', wall: true},
     door    : {sprite: 'door'},              // shop entrance on boss floors, on a floor tile
     shopChest: {sprite: 'chest'},            // items + price, bought with gold
-    shopFire: {sprite: 'campfire'}           // paid healing, a few uses
+    shopFire: {sprite: 'campfire'},          // paid healing, a few uses
+    link    : {sprite: 'item'},              // credits room: opens a docs page
+    creditsDoor: {sprite: 'door'}            // credits room: on to infinite mode
   };
 
   constructor(type, tx, ty, data={}) {

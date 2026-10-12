@@ -127,8 +127,15 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Bosses never lose the hero once triggered (seen once or the arena sealed): new Boss.hunting replaces the sight checks in Boss, Necromancer and Golem.
 - Golem walks in strides like the zombie but off the grid: 0.3s eased stride (~0.45 tile) then 0.5s pause, leaning into each stride; Golem.SPEED replaced by Golem.STEP.
 - Necromancer only raises a wave while fewer than 5 enemies are in the arena (Necromancer.CROWD); otherwise it retries 2s later.
-- Necromancer minion hp fix: halving the whole hp also halved the floor bonus (Enemy.extraHp), which often rounded it away; minions now get half their kind's base hp, plus 1 every 10 floors (Necromancer.MINION_HP).
+- Necromancer minion hp fix: halving the whole hp also halved the floor bonus (Enemy.extraHp), which often rounded it away; minions now get half their kind's base hp, plus the floor bonus (Enemy.extraHp).
 - Fix: the page froze after dying, mostly in boss fights. Game.die moves the hero to -10000,-10000, and an enemy still chasing (provoked minions, alert zombies) ran Enemy.pathStep to an off-map tile; the walk back from the target never reached the start (infinite loop). pathStep now returns null for goals outside the grid.
+- HUD floor number turns red on boss floors (Gui.floor toggles .boss, #hud .depth b.boss).
+- Credits room (src/credits.js, Credits.build): the stairs of floor 25 (Credits.AFTER) lead once per run to a hand-built 15x9 room centered on the map instead of floor 26. The HUD shows CREDITS; the credits text is drawn on the room floor canvas by Credits.draw (called from Game.drawFloor when floor.credits is set): the title in the Title font, "thank you for playing this DEMO", "made by Yuri Shimoi", and a caption "extra material about the game" above the two link items. Two item sprites (entity type 'link') open docs/arena.html and docs/style.html in a new tab; a door (type 'creditsDoor') says "keep on infinite mode" and leads to floor 26. The room box is used as Game.arena so its light covers the whole room. Game.showCredits, Game.credits flag (reset in Game.start).
+- Popovers can show text next to the icon (target.text).
+- Fix: docs/arena.html broke (missing #menu-controls); Gui.init now skips the menu controls list when the page lacks it, and arena.html loads src/credits.js.
+- Fix: enemy hp never grew with floors. Enemy.extraHp read globalThis.Game, but a top-level class isn't a property of globalThis, so the bonus was always 0 (in runs and in the arena page). It now checks the Game binding directly. New rule: +1 hp every 10 floors (Enemy.HP_FLOORS = 10: floor 10 +1, 20 +2...), was +1 on floor 5 then every 10.
+- Necromancer minions now get half their kind's base hp plus Enemy.extraHp (Necromancer.MINION_HP removed).
+- Arena page info line sets Game.depth to the chosen floor before reading enemy hp.
 
 ## 2026-10-11 - Death backdrop and fades
 
