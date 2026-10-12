@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Crawler Style</title>
+
+  <link rel="stylesheet" href="../../../assets/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="../src/style.css">
+  <style>
+    html, body {
+      height: auto;
+      background-color: #121212;
+      color: #f8f8f2;
+      font-family: monospace;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+
+    h1 { margin: 0 0 4px; letter-spacing: 4px; }
+    h2 { margin: 48px 0 4px; padding-bottom: 6px; font-size: 1.2rem; color: #bd93f9; letter-spacing: 3px; border-bottom: 1px solid #44475a; }
+    h3 { margin: 22px 0 8px; font-size: 0.9rem; color: #f8f8f2; letter-spacing: 1px; }
+    p.note { margin: 0 0 12px; color: #6272a4; }
+
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .card {
+      padding: 10px;
+      background-color: #1a1a1a;
+      border: 1px solid #44475a;
+      border-radius: 3px;
+      box-shadow: 3px 3px 0 #000000;
+    }
+
+    .card .label { margin-top: 8px; font-size: 0.8rem; }
+    .card .label span { display: block; color: #6272a4; }
+
+    /* palettes as one strip of touching bands, so colors compare side by side */
+    .palette { display: flex; max-width: 900px; }
+    .chip { flex: 1; min-width: 0; font-size: 0.75rem; }
+    .chip i {
+      display: block;
+      height: 72px;
+      border: 1px solid #000000;
+      border-left-width: 0;
+      box-shadow: 0 3px 0 #000000;
+    }
+    .chip:first-child i { border-left-width: 1px; border-radius: 3px 0 0 3px; }
+    .chip:last-child i  { border-radius: 0 3px 3px 0; }
+    .chip div { margin-top: 8px; padding: 0 4px; overflow-wrap: anywhere; }
+    .chip span { display: block; color: #6272a4; }
+
+    .title-card { display: flex; justify-content: center; padding: 28px 16px; }
+    .game-title {
+      font: normal 5.5rem 'Title', monospace;
+      line-height: 1;
+      letter-spacing: 2px;
+      text-shadow: 4px 4px 0 #000000;
+    }
+
+    canvas.zoom { image-rendering: pixelated; display: block; }
+
+    .stack { position: relative; }
+    .stack canvas + canvas { position: absolute; top: 0; left: 0; }
+
+    /* UI components shown in place instead of fixed to the screen */
+    .ui #hud, .ui #controls, .card #popover, .ui #bossbar {
+      position: static;
+      transform: none;
+    }
+    .card #popover { width: max-content; }
+    /* UI samples sit on the page, no card around them */
+    .card.plain { padding: 0; background: none; border: none; box-shadow: none; }
+    /* sounds: a play button per effect or ambience mood */
+    .sounds { display: flex; flex-wrap: wrap; gap: 10px; }
+    .play {
+      padding: 6px 10px;
+      font: bold 0.75rem monospace;
+      color: #f8f8f2;
+      background-color: #212121;
+      border: 1px solid #44475a;
+      border-radius: 3px;
+      box-shadow: 3px 3px 0 #000000;
+      cursor: pointer;
+    }
+    .play:hover { border-color: #bd93f9; }
+    .play.on { color: #1a1a1a; background-color: #bd93f9; border-color: #f8f8f2; }
+    .ui {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- shrinks to the title so the font info lines up with its right edge -->
+    <div style="width: fit-content; margin: 28px auto 24px;">
+      <div class="game-title">CURSOR CRAWLER</div>
+      <p class="note" style="margin: 4px 0 0; text-align: right">Jersey 10 · 5.5rem · hard shadow</p>
+    </div>
+    <p class="note" style="color: #f8f8f2">Style reference, drawn live with the game's own code and CSS.</p>
+
+    <h2>COLOR</h2>
+    <h3>Map</h3>
+    <p class="note">Floor.COLOR</p>
+    <div class="palette" id="palette-map"></div>
+    <h3>UI</h3>
+    <p class="note">src/style.css</p>
+    <div class="palette" id="palette-ui"></div>
+
+    <h2>MAP</h2>
+    <h3>Tiles</h3>
+    <p class="note">36px, shown at 3x</p>
+    <div class="grid" id="tiles"></div>
+    <h3>Noise</h3>
+    <p class="note" id="noise-note"></p>
+    <div class="grid" id="noise"></div>
+    <h3>Sample room</h3>
+    <p class="note">unlit · lit by the hero</p>
+    <div class="grid" id="room"></div>
+
+    <h2>UI</h2>
+    <h3>Menu</h3>
+    <div class="ui"><button id="menu-button">START</button></div>
+    <h3>HUD</h3>
+    <p class="note">sprite icons at 2x · hearts count half hearts</p>
+    <div class="ui">
+      <div id="hud">
+        <div class="hud-row">
+          <div class="bubble depth">FLOOR <b>3</b></div>
+          <div class="bubble">
+            <span><img class="icon" src="../assets/loot/gold.png" alt="gold"><b>24</b></span>
+            <span><img class="icon" src="../assets/loot/key.png" alt="keys"><b>1</b></span>
+            <span><img class="icon" src="../assets/loot/bomb.png" alt="bombs"><b>2</b></span>
+          </div>
+        </div>
+        <div id="hud-hearts">
+          <img class="icon" src="../assets/loot/heart.png" alt="">
+          <img class="icon" src="../assets/loot/heart.png" alt="">
+          <img class="icon" src="../assets/ui/heartHalf.png" alt="">
+          <img class="icon" src="../assets/ui/heartEmpty.png" alt="">
+          <img class="icon half" src="../assets/ui/heartEmpty.png" alt="">
+        </div>
+      </div>
+    </div>
+    <h3>Controls</h3>
+    <div class="ui">
+      <div id="controls" class="bubble">
+        <span><kbd>Esc</kbd> to pause</span>
+        <span><kbd>L-Click</kbd> to interact</span>
+        <span><kbd>R-Drag</kbd> to shoot</span>
+        <span><kbd>R-Hold</kbd> still to bomb</span>
+      </div>
+    </div>
+    <h3>Boss bar</h3>
+    <div class="ui">
+      <div id="bossbar">
+        <span id="bossbar-name">BEHOLDER</span>
+        <div id="bossbar-track"><div id="bossbar-fill" style="width: 60%"></div></div>
+      </div>
+    </div>
+    <h3>Popovers</h3>
+    <p class="note">greyed out when unavailable · shop chests list their goods</p>
+    <div class="grid" id="bubbles"></div>
+
+    <h2>SPRITES</h2>
+    <p class="note">assets/&lt;group&gt;/ · 12x12 (bosses 24x24) · shown at 2x</p>
+    <h3>Cursor</h3>
+    <p class="note">the tip is the position · hand over interactive things</p>
+    <div class="grid" id="cursor"></div>
+    <h3>Props</h3>
+    <div class="grid" id="sprites-props"></div>
+    <h3>Loot</h3>
+    <div class="grid" id="sprites-loot"></div>
+    <h3>Shots</h3>
+    <div class="grid" id="sprites-shots"></div>
+    <h3>Decals</h3>
+    <div class="grid" id="sprites-decals"></div>
+    <h3>UI</h3>
+    <div class="grid" id="sprites-ui"></div>
+    <h3>Enemies</h3>
+    <div class="grid" id="sprites-enemies"></div>
+    <h3>Bosses</h3>
+    <div class="grid" id="sprites-bosses"></div>
+
+    <h2>SOUND</h2>
+    <h3>Effects</h3>
+    <p class="note">assets/sounds/sfx · Sound.SFX</p>
+    <div class="sounds" id="sfx"></div>
+    <h3>Ambience</h3>
+    <p class="note">assets/sounds/ambience · Sound.AMBIENCE, looped, click again to stop</p>
+    <div class="sounds" id="ambience"></div>
+    <p class="note">Effects: "The Essential Retro Video Game Sound Effects Collection" by Juhani Junkala (CC0) · Ambience: JaggedStone, Paul Wortmann (CC0), via OpenGameArt</p>
+  </main>
+
+  <script src="../lib/dungeon-forge/engine/random.js"></script>
+  <script src="../lib/dungeon-forge/engine/tile.js"></script>
+  <script src="../src/floor.js"></script>
+  <script src="../src/hero.js"></script>
+  <script src="../src/sprites.js"></script>
+  <script src="../src/light.js"></script>
+  <script src="../src/sound.js"></script>
+  <script>
+    const T = Floor.TILE;
+    const GLYPH = {
+      ' ': Tile.VOID, '#': Tile.WALL, '.': Tile.FLOOR, 'c': Tile.CORRIDOR,
+      '+': Tile.DOOR, '<': Tile.STAIRS_UP, '>': Tile.STAIRS_DOWN
+    };
+
+    /** Floor from an ASCII sketch, skipping dungeon-forge generation */
+    function makeFloor(rows, seed='style') {
+      const floor = Object.create(Floor.prototype);
+      floor.data = {seed, tiles: rows.map(r => [...r].map(ch => GLYPH[ch]))};
+      floor.cols = rows[0].length;
+      floor.rows = rows.length;
+      floor.segments = floor.buildSegments();
+      floor.solid = new Set();
+      floor.spikesOn = true;
+      floor.noiseCache = {};
+      return floor;
+    }
+
+    function canvas(width, height, zoom=1) {
+      const el = document.createElement('CANVAS');
+      el.width  = width;
+      el.height = height;
+      el.classList.add('zoom');
+      el.style.width  = `${width * zoom}px`;
+      el.style.height = `${height * zoom}px`;
+      return el;
+    }
+
+    function card(parent, content, title, sub='') {
+      const $card = document.createElement('DIV');
+      $card.classList.add('card');
+      $card.append(content);
+      const $label = document.createElement('DIV');
+      $label.classList.add('label');
+      $label.innerHTML = `${title}<span>${sub}</span>`;
+      $card.append($label);
+      document.getElementById(parent).append($card);
+    }
+
+    function swatch(parent, name, color) {
+      const $chip = document.createElement('DIV');
+      $chip.classList.add('chip');
+      $chip.innerHTML = `<i style="background-color: ${color}"></i><div>${name}<span>${color}</span></div>`;
+      document.getElementById(parent).append($chip);
+    }
+
+    function withoutNoise(fn) {
+      const saved = Floor.NOISE;
+      Floor.NOISE = {cell: saved.cell, floor: {tile: 0, grain: 0}, wall: {tile: 0, grain: 0}};
+      fn();
+      Floor.NOISE = saved;
+    }
+
+    function drawFloor(floor, zoom) {
+      const el = canvas(floor.cols * T, floor.rows * T, zoom);
+      const ctx = el.getContext('2d');
+      floor.draw(ctx, ctx);
+      return el;
+    }
+
+    // icons first, the floor draws the stairs with them
+    Sprites.load('../assets/').then(() => {
+      //#region [ SOUND ]
+      Sound.ASSETS = '../assets/sounds/';
+
+      function playButton(parent, label, onClick) {
+        const $button = document.createElement('BUTTON');
+        $button.classList.add('play');
+        $button.textContent = `▶ ${label}`;
+        $button.addEventListener('click', () => onClick($button));
+        document.getElementById(parent).append($button);
+      }
+
+      Sound.SFX.forEach(name => playButton('sfx', name, () => Sound.play(name)));
+
+      // one loop at a time
+      let loop = null;
+      Object.entries(Sound.AMBIENCE).forEach(([mood, file]) => playButton('ambience', mood, $button => {
+        const same = loop?.file === file;
+        if(loop) {
+          loop.audio.pause();
+          loop.$button.classList.remove('on');
+          loop = null;
+        }
+        if(same) return;
+        const audio = new Audio(`${Sound.ASSETS}ambience/${file}.ogg`);
+        audio.loop = true;
+        audio.volume = Sound.VOLUME.ambience;
+        audio.play();
+        $button.classList.add('on');
+        loop = {file, audio, $button};
+      }));
+      //#endregion
+
+      //#region [ PALETTES ]
+      Object.entries(Floor.COLOR).forEach(([name, color]) => swatch('palette-map', name, color));
+
+      [
+        ['background',   '#121212'],
+        ['surface',      '#212121'],
+        ['border',       '#44475a'],
+        ['text',         '#f8f8f2'],
+        ['muted',        '#6272a4'],
+        ['button',       '#bd93f9'],
+        ['button hover', '#8a63c9'],
+        ['accent',       '#50fa7b'],
+        ['shadow',       '#000000']
+      ].forEach(([name, color]) => swatch('palette-ui', name, color));
+      //#endregion
+
+      //#region [ TILES ]
+      [
+        ['floor',       '.', 'FLOOR / CORRIDOR'],
+        ['wall',        '#', 'WALL'],
+        ['door',        '+', 'DOOR']
+      ].forEach(([name, ch, sub]) => card('tiles', drawFloor(makeFloor([ch]), 3), name, sub));
+      //#endregion
+
+      //#region [ NOISE ]
+      const {cell, floor: nf, wall: nw} = Floor.NOISE;
+      document.getElementById('noise-note').textContent =
+        `Floor.NOISE · ${cell}px cells · floor ${nf.tile} + ${nf.grain} · wall ${nw.tile} + ${nw.grain} (black alpha)`;
+
+      const patch = ['####', '#..#', '#..#', '####'];
+      withoutNoise(() => card('noise', drawFloor(makeFloor(patch), 2), 'without noise', 'flat colors'));
+      card('noise', drawFloor(makeFloor(patch), 2), 'with noise', 'as in game');
+      //#endregion
+
+      //#region [ CURSOR ]
+      [[false, 'arrow', 'Hero.SHAPE'], [true, 'pointer', 'Hero.POINTER']].forEach(([pointer, name, sub]) => {
+        const el = drawFloor(makeFloor(['.']), 4);
+        const hero = new Hero(pointer? 13: 10, 8);
+        hero.draw(el.getContext('2d'), pointer);
+        card('cursor', el, name, sub);
+      });
+      //#endregion
+
+      //#region [ SPRITES ]
+      // one group per assets folder (Sprites.FOLDERS)
+      const GROUPS = Object.fromEntries(Object.entries(Sprites.FOLDERS).map(([folder, names]) => [`sprites-${folder}`, names]));
+
+      // enemies and bosses live in their rooms below; alphabetical inside each other group
+      const ROOMS = ['sprites-enemies', 'sprites-bosses'];
+      Object.entries(GROUPS).filter(([group]) => !ROOMS.includes(group)).forEach(([group, names]) => names.filter(n => Sprites.NAMES.includes(n)).sort((a, b) => a.localeCompare(b)).forEach(name => {
+        const tiles = Sprites.tiles(name);
+        // the crack is an overlay, show it on a wall
+        const sketch = Array(tiles).fill((name === 'crackedWall'? '#': '.').repeat(tiles));
+        const el = drawFloor(makeFloor(sketch), 2);
+        Sprites.draw(el.getContext('2d'), name, 0, 0);
+        card(group, el, name, tiles > 1? `${tiles}x${tiles}`: '');
+      }));
+      //#endregion
+
+      //#region [ IDLE ROOMS ]
+      /** Room with the sprites in a row, breathing like the game's idle squish and turning now and then */
+      function idleRoom(parent, names, gap) {
+        const cols = names.length * gap + 3;
+        // side walls only: a free row above the sprites, one below for the names
+        const rows = Math.max(...names.map(n => Sprites.tiles(n))) + 2;
+        const room = makeFloor(Array(rows).fill(`#${'.'.repeat(cols - 2)}#`));
+        const base = drawFloor(room, 1);
+        const el = canvas(base.width, base.height, 1);
+        const ctx = el.getContext('2d');
+
+        const actors = names.map((name, i) => ({
+          name,
+          size  : T * Sprites.tiles(name),
+          cx    : T * (1.5 + i * gap + gap / 2),
+          feet  : T * (rows - 1),
+          phase : Math.random() * Math.PI * 2,
+          facing: Math.random() < 0.5? -1: 1,
+          turn  : 1 + Math.random() * 3
+        }));
+
+        let last = performance.now();
+        (function frame(now) {
+          const dt = (now - last) / 1000, t = now / 1000;
+          last = now;
+          ctx.drawImage(base, 0, 0);
+          ctx.font = '12px monospace';
+          ctx.textAlign = 'center';
+          for(const a of actors) {
+            a.turn -= dt;
+            if(a.turn <= 0) {
+              a.facing *= -1;
+              a.turn = 1.5 + Math.random() * 3;
+            }
+            const s = Math.sin(t * 3 + a.phase) * 0.06;
+            // sprites face left (facing 1, flipped at -1); the knight holds its shield on that side, mirrored with it
+            const shield = a.name === 'knight'? () => {
+              ctx.save();
+              ctx.translate(Math.round(a.cx - a.facing * 16), Math.round(a.feet - a.size / 2));
+              ctx.scale(a.facing, 1);
+              Sprites.draw(ctx, 'shield', -T / 2, -T / 2, T); // same pixel scale as the knight, like Knight.SHIELD
+              ctx.restore();
+            }: null;
+            ctx.save();
+            ctx.translate(Math.round(a.cx), Math.round(a.feet));
+            ctx.scale((1 + s) * a.facing, 1 - s);
+            Sprites.draw(ctx, a.name, -a.size / 2, -a.size);
+            ctx.restore();
+            shield?.();
+            ctx.fillStyle = '#000000';
+            ctx.fillText(a.name, a.cx + 1, a.feet + 15);
+            ctx.fillStyle = '#f8f8f2';
+            ctx.fillText(a.name, a.cx, a.feet + 14);
+          }
+          requestAnimationFrame(frame);
+        })(last);
+
+        card(parent, el, `${names.length} ${parent.split('-')[1]}`, 'idle squish, turning');
+        document.getElementById(parent).lastChild.classList.add('plain');
+      }
+      ROOMS.forEach(group => idleRoom(group, GROUPS[group].filter(n => n !== 'shield' && Sprites.NAMES.includes(n)),
+        group === 'sprites-bosses'? 3: 2));
+      //#endregion
+
+      //#region [ POPOVERS ]
+      // [label, icon class or shop goods, enabled]
+      const goods = [{sprite: 'bomb', amount: 2}, {sprite: 'key', amount: 1}];
+      [
+        ['descend',          'fa-arrow-down', true],
+        ['stairs sealed',    'fa-lock',       false],
+        ['open chest',       'fa-key',        true],
+        ['chest, no key',    'fa-key',        false],
+        ['break jar / box',  'fa-hand-fist',  true],
+        ['lower spikes',     'fa-toggle-off', true],
+        ['raise spikes',     'fa-toggle-on',  true],
+        ['light torch',      'fa-fire',       true],
+        ['rest',             'fa-heart',      true],
+        ['rest, full health','fa-heart',      false],
+        ['cracked wall',     'fa-bomb',       false],
+        ['shop door',        'fa-door-open',  true],
+        ['shop chest',       goods,           true],
+        ['shop chest, no gold', goods,        false]
+      ].forEach(([name, icon, enabled]) => {
+        const $bubble = document.createElement('DIV');
+        $bubble.id = 'popover';
+        $bubble.classList.toggle('disabled', !enabled);
+        $bubble.innerHTML = Array.isArray(icon)?
+          icon.map(g => `<img class="icon" src="${Sprites.src(g.sprite)}" alt="">${g.amount > 1? `<b>${g.amount}</b>`: ''}`).join(''):
+          `<i class="fa-solid ${icon}"></i>`;
+        card('bubbles', $bubble, name, Array.isArray(icon)? 'goods + amounts': icon);
+        document.getElementById('bubbles').lastChild.classList.add('plain');
+      });
+      //#endregion
+
+      //#region [ SAMPLE ROOM ]
+      const room = makeFloor([
+        '#################',
+        '#.....#####.....#',
+        '#.<...#####.....#',
+        '#.....+ccc+..>..#',
+        '#.....#####.....#',
+        '#################'
+      ]);
+      // both at 0.75x so they sit side by side
+      card('room', drawFloor(room, 0.75), 'unlit', 'Floor.draw');
+
+      const $stack = document.createElement('DIV');
+      $stack.classList.add('stack');
+      const base = drawFloor(room, 0.75);
+      const dark = canvas(base.width, base.height, 0.75);
+      $stack.append(base, dark);
+
+      const hero  = new Hero(T * 4.4, T * 3.3);
+      const light = new Light(base.width, base.height, T * 6);
+      light.cast(hero.x, hero.y, room.segments);
+      light.findWalls(room);
+      light.remember();
+      light.draw({ctx: dark.getContext('2d'), element: dark, clear() {
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, dark.width, dark.height);
+      }}, 0, 0);
+      hero.draw(dark.getContext('2d'));
+      card('room', $stack, 'lit', `Light radius ${T * 6}px, memory ${Light.MEMORY}`);
+      //#endregion
+    });
+  </script>
+</body>
+</html>

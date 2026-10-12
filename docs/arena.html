@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Crawler Boss Test</title>
+
+  <link rel="stylesheet" href="../../../assets/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="../src/canvas.css">
+  <link rel="stylesheet" href="../src/style.css">
+  <style>
+    /* test panel: same brutalist block as the game's bubbles */
+    #test {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      background-color: #12121299;
+    }
+
+    #test .panel {
+      display: grid;
+      gap: 12px;
+      box-sizing: border-box;
+      width: min(440px, calc(100vw - 32px));
+      padding: 20px 24px;
+      background-color: #212121;
+      border: 1px solid #44475a;
+      border-radius: 3px;
+      box-shadow: 4px 4px 0 #000000;
+    }
+
+    #test h1 {
+      margin: 0;
+      font: normal 3rem 'Title', monospace;
+      line-height: 1;
+      letter-spacing: 2px;
+      text-shadow: 3px 3px 0 #000000;
+    }
+
+    #test h2 {
+      margin: 6px 0 0;
+      font-size: 0.8rem;
+      color: #bd93f9;
+      letter-spacing: 2px;
+    }
+
+    #test .row {
+      display: grid;
+      grid-template-columns: 1fr 130px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #test label { color: #6272a4; }
+
+    #test input,
+    #test select {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 6px 8px;
+      font: inherit;
+      color: #f8f8f2;
+      background-color: #121212;
+      border: 1px solid #44475a;
+      border-radius: 3px;
+    }
+
+    #test input:focus,
+    #test select:focus {
+      outline: none;
+      border-color: #bd93f9;
+    }
+
+    #test input[type=checkbox] { width: auto; justify-self: start; }
+
+    #test optgroup { color: #6272a4; }
+    #test option { color: #f8f8f2; }
+    #test option.boss { color: #ff5555; }
+
+    #test .info { min-height: 1.2em; color: #f1fa8c; }
+    #test .status { color: #ff5555; letter-spacing: 1px; }
+    #test .status:empty { display: none; }
+
+    #test .buttons { display: flex; gap: 12px; margin-top: 6px; }
+
+    #test button {
+      flex: 1;
+      padding: 10px 16px;
+      font: bold 1rem monospace;
+      letter-spacing: 2px;
+      color: #1a1a1a;
+      background-color: #bd93f9;
+      border: 2px solid #f8f8f2;
+      border-radius: 3px;
+      box-shadow: 4px 4px 0 #44475a;
+      cursor: pointer;
+      transition: transform 80ms ease, box-shadow 80ms ease;
+    }
+
+    #test button:hover  { background-color: #8a63c9; }
+    #test button:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #44475a; }
+    #test button.secondary { color: #f8f8f2; background-color: #44475a; }
+    #test button.secondary:hover { background-color: #383a4a; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="screen"></div>
+    <div id="gui">
+      <div id="vignette"></div>
+      <div id="menu" hidden>
+        <h1 id="title"></h1>
+        <button id="menu-button"></button>
+        <p id="hint"></p>
+      </div>
+      <div id="hud" hidden>
+        <div class="hud-row">
+          <div class="bubble depth">FLOOR <b id="hud-depth">1</b></div>
+          <div class="bubble">
+            <span><img class="icon" src="../assets/loot/gold.png" alt="gold"><b id="hud-gold">0</b></span>
+            <span><img class="icon" src="../assets/loot/key.png" alt="keys"><b id="hud-keys">0</b></span>
+            <span><img class="icon" src="../assets/loot/bomb.png" alt="bombs"><b id="hud-bombs">0</b></span>
+          </div>
+        </div>
+        <div id="hud-hearts"></div>
+      </div>
+      <div id="controls" class="bubble" hidden>
+        <span><kbd>Esc</kbd> test menu</span>
+        <span><kbd>R-Drag</kbd> to shoot</span>
+        <span><kbd>R-Hold</kbd> still to bomb</span>
+      </div>
+      <div id="popover" hidden></div>
+      <div id="bossbar" hidden>
+        <span id="bossbar-name"></span>
+        <div id="bossbar-track"><div id="bossbar-fill"></div></div>
+      </div>
+
+      <form id="test" autocomplete="off">
+        <div class="panel">
+          <h1>BOSS TEST</h1>
+          <div class="status" id="status"></div>
+
+          <div class="row"><label for="boss">entity</label><select id="boss"></select></div>
+          <div class="row"><label for="amount">amount</label><input id="amount" type="number" min="1" max="30" value="1"></div>
+          <div class="row"><label for="floor">floor</label><input id="floor" type="number" min="5" max="95" step="5" value="5"></div>
+          <div class="info" id="info"></div>
+
+          <h2>HERO (estimated for the floor)</h2>
+          <div class="row"><label for="maxHp">max health, half hearts</label><input id="maxHp" type="number" min="1" max="12"></div>
+          <div class="row"><label for="bombs">bombs</label><input id="bombs" type="number" min="0" max="99"></div>
+
+          <div class="buttons">
+            <button type="button" class="secondary" id="continue" hidden>CONTINUE</button>
+            <button type="submit" id="fight">FIGHT</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="flash"></div>
+      <div id="fade"></div>
+    </div>
+  </div>
+
+  <!-- dungeon-forge engine (vendored in lib/) -->
+  <script src="../lib/dungeon-forge/engine/random.js"></script>
+  <script src="../lib/dungeon-forge/engine/tile.js"></script>
+  <script src="../lib/dungeon-forge/engine/grid.js"></script>
+  <script src="../lib/dungeon-forge/engine/room.js"></script>
+  <script src="../lib/dungeon-forge/engine/layout.js"></script>
+  <script src="../lib/dungeon-forge/engine/corridor.js"></script>
+  <script src="../lib/dungeon-forge/engine/dungeon.js"></script>
+  <script src="../lib/dungeon-forge/engine/forge.js"></script>
+
+  <script src="../src/canvas.js"></script>
+  <script src="../src/floor.js"></script>
+  <script src="../src/hero.js"></script>
+  <script src="../src/sprites.js"></script>
+  <script src="../src/light.js"></script>
+  <script src="../src/entities.js"></script>
+  <script src="../src/actors.js"></script>
+  <script src="../src/enemies.js"></script>
+  <script src="../src/bosses.js"></script>
+  <script src="../src/populate.js"></script>
+  <script src="../src/shop.js"></script>
+  <script src="../src/gui.js"></script>
+  <script src="../src/sound.js"></script>
+  <script src="../src/effects.js"></script>
+  <script src="../src/game.js"></script>
+  <script>
+    /** Boss test: picks a boss and floor, gives the hero the upgrades a run would have there, and drops it in the arena */
+    class Test {
+      static $form   = document.getElementById('test');
+      static $boss   = document.getElementById('boss');
+      static $amount = document.getElementById('amount');
+      static $floor  = document.getElementById('floor');
+      // bosses first, then every normal enemy kind (mimic too, it only spawns hidden in chests)
+      static KINDS = [
+        ...Populate.BOSSES.map(kind => ({kind, boss: true})),
+        ...[...Populate.ENEMIES.map(e => e.kind), Mimic].map(kind => ({kind, boss: false}))
+      ];
+      static $info   = document.getElementById('info');
+      static $status = document.getElementById('status');
+      static $resume = document.getElementById('continue');
+      static $stats  = ['maxHp', 'bombs'].map(id => document.getElementById(id));
+
+      static init() {
+        Sprites.ASSETS = '../assets/';
+        Sound.ASSETS = '../assets/sounds/';
+        Gui.init();
+        Game.init(document.getElementById('screen'));
+
+        const groups = {true: 'bosses', false: 'enemies'};
+        Object.entries(groups).forEach(([boss, label]) => {
+          const $group = document.createElement('OPTGROUP');
+          $group.label = label;
+          Test.KINDS.forEach(({kind, boss: isBoss}, i) => {
+            if(String(isBoss) !== boss) return;
+            const $option = document.createElement('OPTION');
+            const actor = new kind(0, 0);
+            $option.value = i;
+            $option.textContent = isBoss? actor.name: actor.sprite;
+            $option.classList.toggle('boss', isBoss);
+            $group.append($option);
+          });
+          Test.$boss.append($group);
+        });
+        // the closed select shows the chosen option's color too
+        const paint = () => Test.$boss.style.color = Test.chosen.boss? '#ff5555': '';
+
+        // the panel replaces the game's pause and death menus
+        Gui.pause = () => Test.show('pause');
+        Gui.dead = depth => {
+          Gui.$popover.hidden = true;
+          Gui.$vignette.classList.remove('dark', 'red');
+          Test.show('dead', depth);
+        };
+
+        Test.$floor.oninput = () => Test.estimate();
+        Test.$boss.onchange = () => {
+          paint();
+          Test.describe();
+        };
+        paint();
+        Test.$form.onsubmit = e => {
+          e.preventDefault();
+          Test.fight();
+        };
+        Test.$resume.onclick = () => {
+          Test.$form.hidden = true;
+          Game.resume();
+        };
+
+        Test.estimate();
+        Sprites.load('../assets/').then(() => Game.demo());
+      }
+
+      static get chosen() {
+        return Test.KINDS[Test.$boss.value];
+      }
+
+      static get amount() {
+        return Math.max(1, Math.min(30, parseInt(Test.$amount.value) || 1));
+      }
+
+      static get depth() {
+        return Math.max(1, Math.min(99, parseInt(Test.$floor.value) || 1));
+      }
+
+      /** Rough stats of a run reaching this floor: some max health, more bombs as it goes */
+      static estimate() {
+        const d = Test.depth;
+        const [maxHp, bombs] = Test.$stats;
+        maxHp.value = Math.min(Game.MAX_HP, 3 + Math.floor((d - 1) / 3));
+        bombs.value = Math.min(9, 1 + Math.floor(d / 3));
+        Test.describe();
+      }
+
+      /** Numbers of the chosen kind at the floor's tier */
+      static describe() {
+        const tier = Actor.tier(Test.depth);
+        const {kind, boss} = Test.chosen;
+        const actor = new kind(0, 0, tier);
+        Test.$info.textContent = `tier ${tier} · ${boss? actor.name: actor.sprite} ${actor.maxHp} hp · hits for ${actor.damage} half hearts`;
+      }
+
+      static show(why, depth) {
+        Test.$status.textContent = why === 'dead'? `YOU DIED on floor ${depth}`: '';
+        Test.$resume.hidden = why !== 'pause';
+        Test.$form.hidden = false;
+      }
+
+      static fight() {
+        const [maxHp, bombs] = Test.$stats.map(i => Math.max(0, parseInt(i.value) || 0));
+        Test.$form.hidden = true;
+        Game.buildFloor = (cols, rows, start, depth) => Test.arena(cols, rows, depth, Test.chosen, Test.amount);
+        Game.start(innerWidth / 2, innerHeight / 2, {
+          depth: Test.depth,
+          stats: {hp: Math.max(1, maxHp), maxHp: Math.max(1, maxHp), bombs}
+        });
+      }
+
+      /**
+       * Only the boss arena, centered on the map: up stairs on its left side, down stairs on the right,
+       * the chosen kind spread out from the middle. Stands in for Floor + Populate through Game.buildFloor
+       */
+      static arena(cols, rows, depth, {kind, boss}, amount) {
+        const T = Floor.TILE;
+        const {width: W, height: H} = Floor.ARENA;
+        const x0 = Math.floor((cols - W) / 2), y0 = Math.floor((rows - H) / 2), mid = y0 + Math.floor(H / 2);
+
+        let tiles = Array.from({length: rows}, () => Array(cols).fill(Tile.VOID));
+        for(let y = y0 - 1; y <= y0 + H; y++)
+          for(let x = x0 - 1; x <= x0 + W; x++)
+            tiles[y][x] = x < x0 || y < y0 || x >= x0 + W || y >= y0 + H? Tile.WALL: Tile.FLOOR;
+        const start = {x: x0 + 1, y: mid}, end = {x: x0 + W - 2, y: mid};
+        tiles[start.y][start.x] = Tile.STAIRS_UP;
+        tiles[end.y][end.x] = Tile.STAIRS_DOWN;
+
+        const floor = Object.assign(Object.create(Floor.prototype), {
+          data: {seed: `arena|${depth}|${Math.random()}`, tiles, start, end, rooms: [], corridors: []},
+          depth, cols, rows, isBossFloor: true, isCampFloor: false,
+          solid: new Set(), hazards: new Set(), spikesOn: false, noiseCache: {}
+        });
+        floor.segments = floor.buildSegments();
+
+        const arena = {x: x0, y: y0, width: W, height: H, parts: [{x: x0, y: y0, width: W, height: H}]};
+        // nearest spots to the middle first, kept apart (bosses are 2 tiles) and away from the hero's stairs;
+        // bosses stand on tile corners, grid enemies on tile centers
+        const off = boss? 0: 0.5, gap = boss? 3: 1;
+        const spots = [];
+        for(let y = y0 + 1; y < y0 + H - 1; y++)
+          for(let x = x0 + 1; x < x0 + W - 1; x++)
+            if(Math.hypot(x - start.x, y - start.y) >= 4 && !(x === end.x && y === end.y)) spots.push({x: x + off, y: y + off});
+        const mx = x0 + W / 2, my = y0 + H / 2;
+        spots.sort((a, b) => Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my));
+
+        const actors = [], entities = [], taken = [];
+        for(const spot of spots) {
+          if(taken.length >= amount) break;
+          if(taken.some(t => Math.hypot(t.x - spot.x, t.y - spot.y) < gap)) continue;
+          taken.push(spot);
+          // mimics wait as chests, like in a run (walkable, no collision); hovering one wakes it (Game.wakeMimic)
+          if(kind === Mimic)
+            entities.push(new Entity('chest', Math.floor(spot.x), Math.floor(spot.y), {mimic: true, unlocked: true}));
+          else actors.push(new kind(spot.x * T, spot.y * T, Actor.tier(depth)));
+        }
+        return {floor, entities, actors, arena};
+      }
+    }
+
+    Test.init();
+  </script>
+</body>
+</html>

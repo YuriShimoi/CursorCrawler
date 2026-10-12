@@ -1,0 +1,340 @@
+/* title font: Jersey 10 (OFL), tall condensed pixel. Jacquard 24 kept in assets/fonts as an alternative */
+@font-face {
+  font-family: 'Title';
+  src: url('../assets/fonts/Jersey10-Regular.ttf') format('truetype');
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#container {
+  display: flex;
+  height: 100%;
+  background-color: #121212;
+  font-family: monospace;
+  color: #f8f8f2;
+}
+
+#screen, #gui {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#gui {
+  z-index: 100;
+  pointer-events: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* menu: button sits exactly on the screen center */
+#menu {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background-color: #12121288;
+}
+
+#title {
+  position: absolute;
+  top: calc(50% - 128px);
+  margin: 0;
+  font: normal 5.5rem 'Title', monospace;
+  letter-spacing: 2px;
+  line-height: 1;
+  text-shadow: 4px 4px 0 #000000;
+}
+
+#hint {
+  position: absolute;
+  top: calc(50% + 50px);
+  margin: 0;
+  color: #6272a4;
+}
+
+#menu-button {
+  padding: 12px 28px;
+  font: bold 1.1rem monospace;
+  letter-spacing: 2px;
+  color: #1a1a1a;
+  background-color: #bd93f9;
+  border: 2px solid #f8f8f2;
+  border-radius: 3px;
+  box-shadow: 4px 4px 0 #44475a;
+  cursor: pointer;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+#menu-button:hover {
+  background-color: #8a63c9;
+}
+
+#menu-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 #44475a;
+}
+
+#menu-button:disabled,
+#menu-button:disabled:hover,
+#menu-button:disabled:active {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+  box-shadow: 4px 4px 0 #44475a;
+  background-color: #bd93f9;
+}
+
+/* death screen: run info above, button pushed down away from where the cursor was */
+#menu.dead #title { top: calc(50% - 170px); }
+#menu.dead #hint  { top: calc(50% - 65px); }
+#menu.dead #menu-button { margin-top: 120px; }
+
+/* hud bubbles: brutalist block with a touch of glass */
+.bubble {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 34px;
+  gap: 15px;
+  padding: 4px 12px;
+  background-color: #21212199;
+  backdrop-filter: blur(2px);
+  border: 1px solid #44475a;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+/* floor and items bubbles in a row, hearts below with no container */
+#hud {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hud-row {
+  display: flex;
+  gap: 10px;
+}
+
+#controls {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  color: #6272a4;
+}
+
+kbd {
+  padding: 0 5px;
+  font: bold 0.8rem monospace;
+  color: #f8f8f2;
+  background-color: #44475a;
+  border-radius: 3px;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+/* sprite icons from assets/<folder>, 12x12 png at 2x */
+.icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+#hud .bubble span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* half-capacity heart slot: left half of the icon only */
+#hud-hearts .icon.half {
+  width: 12px;
+  object-fit: cover;
+  object-position: left;
+}
+
+#hud-hearts {
+  display: flex;
+  gap: 2px;
+  filter: drop-shadow(2px 2px 0 #000000);
+}
+
+#hud .depth b  { color: #50fa7b; }
+
+/* popover: icon-only speech bubble above the hero; Gui.popover places it on whole pixels */
+#popover {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Gui.popover keeps the width even so the tail centers on a whole pixel */
+  box-sizing: border-box;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 5px;
+  gap: 2px;
+  font-size: 0.9rem;
+  color: #50fa7b;
+  background-color: #212121;
+  border: 1px solid #50fa7b;
+  border-radius: 3px;
+  /* drop-shadow so the tail gets the hard shadow too */
+  filter: drop-shadow(2px 2px 0 #000000);
+}
+
+/* tail: border-colored triangle, and the same fill-colored one 2px higher so it
+   covers the bottom border and overlaps the body (no seam), leaving ~1px edges */
+#popover::before,
+#popover::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 7px);
+  border-style: solid;
+  border-color: transparent;
+  border-width: 7px 7px 0;
+}
+
+#popover::before {
+  top: 100%;
+  border-top-color: #50fa7b;
+}
+
+#popover::after {
+  top: calc(100% - 2px);
+  border-top-color: #212121;
+}
+
+#popover.disabled {
+  color: #6272a4;
+  border-color: #6272a4;
+}
+
+#popover.disabled::before {
+  border-top-color: #6272a4;
+}
+
+/* shop goods: amount after each sprite */
+#popover b {
+  margin-right: 3px;
+  font-size: 0.75rem;
+  color: #f8f8f2;
+}
+
+#popover.disabled img,
+#popover.disabled b {
+  opacity: 0.45;
+}
+
+/* boss health: brutalist bar at the bottom center, name above so any length fits */
+#bossbar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: #ff5555;
+  letter-spacing: 2px;
+  background-color: #21212199;
+  backdrop-filter: blur(2px);
+  border: 1px solid #44475a;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+#bossbar-name {
+  max-width: min(520px, 70vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#bossbar-track {
+  width: min(520px, 70vw);
+  height: 10px;
+  background-color: #121212;
+  border: 1px solid #44475a;
+}
+
+#bossbar-fill {
+  height: 100%;
+  background-color: #ff5555;
+  transition: width 120ms ease;
+}
+
+/* low health: faint dark edges at 2 half hearts, faint red at 1; each layer fades on its own */
+#vignette {
+  position: fixed;
+  inset: 0;
+}
+
+#vignette::before,
+#vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+
+#vignette::before {
+  background: radial-gradient(ellipse at center, transparent 65%, #00000059 100%);
+}
+
+#vignette::after {
+  background: radial-gradient(ellipse at center, transparent 70%, #ff555524 100%);
+}
+
+#vignette.dark::before,
+#vignette.red::after {
+  opacity: 1;
+}
+
+/* red flash when the hero takes damage */
+#flash {
+  position: fixed;
+  inset: 0;
+  background-color: #ff5555;
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+}
+
+#flash.on {
+  opacity: 0.18;
+  transition: none;
+}
+
+/* black fade between the start screen and a new run */
+#fade {
+  position: fixed;
+  inset: 0;
+  background-color: #121212;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+#fade.on {
+  opacity: 1;
+}
+
+.muted {
+  color: #6272a4;
+}

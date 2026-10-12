@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Crawler</title>
+
+  <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="src/canvas.css">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <div id="container">
+    <div id="screen"></div>
+    <div id="gui">
+      <div id="vignette"></div>
+      <div id="menu">
+        <h1 id="title">CURSOR CRAWLER</h1>
+        <button id="menu-button">START</button>
+        <p id="hint"></p>
+      </div>
+      <div id="hud" hidden>
+        <div class="hud-row">
+          <div class="bubble depth">FLOOR <b id="hud-depth">1</b></div>
+          <div class="bubble">
+            <span><img class="icon" src="assets/loot/gold.png" alt="gold"><b id="hud-gold">0</b></span>
+            <span><img class="icon" src="assets/loot/key.png" alt="keys"><b id="hud-keys">0</b></span>
+            <span><img class="icon" src="assets/loot/bomb.png" alt="bombs"><b id="hud-bombs">0</b></span>
+          </div>
+        </div>
+        <div id="hud-hearts"></div>
+      </div>
+      <div id="controls" class="bubble" hidden>
+        <span><kbd>Esc</kbd> to pause</span>
+        <span><kbd>L-Click</kbd> to interact</span>
+        <span><kbd>R-Drag</kbd> to shoot</span>
+        <span><kbd>R-Hold</kbd> still to bomb</span>
+      </div>
+      <div id="popover" hidden></div>
+      <div id="bossbar" hidden>
+        <span id="bossbar-name"></span>
+        <div id="bossbar-track"><div id="bossbar-fill"></div></div>
+      </div>
+      <div id="flash"></div>
+      <div id="fade"></div>
+    </div>
+  </div>
+
+  <!-- dungeon-forge engine (vendored in lib/) -->
+  <script src="lib/dungeon-forge/engine/random.js"></script>
+  <script src="lib/dungeon-forge/engine/tile.js"></script>
+  <script src="lib/dungeon-forge/engine/grid.js"></script>
+  <script src="lib/dungeon-forge/engine/room.js"></script>
+  <script src="lib/dungeon-forge/engine/layout.js"></script>
+  <script src="lib/dungeon-forge/engine/corridor.js"></script>
+  <script src="lib/dungeon-forge/engine/dungeon.js"></script>
+  <script src="lib/dungeon-forge/engine/forge.js"></script>
+
+  <script src="src/canvas.js"></script>
+  <script src="src/floor.js"></script>
+  <script src="src/hero.js"></script>
+  <script src="src/sprites.js"></script>
+  <script src="src/light.js"></script>
+  <script src="src/entities.js"></script>
+  <script src="src/actors.js"></script>
+  <script src="src/enemies.js"></script>
+  <script src="src/bosses.js"></script>
+  <script src="src/populate.js"></script>
+  <script src="src/shop.js"></script>
+  <script src="src/gui.js"></script>
+  <script src="src/sound.js"></script>
+  <script src="src/effects.js"></script>
+  <script src="src/game.js"></script>
+  <script src="src/script.js" defer></script>
+</body>
+</html>
