@@ -137,6 +137,7 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Necromancer minions now get half their kind's base hp plus Enemy.extraHp (Necromancer.MINION_HP removed).
 - Arena page info line sets Game.depth to the chosen floor before reading enemy hp.
 - Start screen subtitle under the title: "a 25 floors demo" on the left and "by. Yuri Shimoi" on the right (#subtitle, a span inside #title, so Gui.menu replacing the title text removes it on the pause and death screens).
+- Death screen shows run stats instead of "floor N, N gold. the next dungeon is built around your click": floor reached, coins collected and spent, enemies killed (bosses included), chests opened (shop chests included). Tracked in Game.run (reset in Game.start; coins in Game.give, spent on shop chests and the shop fire, kills in Game.kill, chests on 'open' and 'buy'); Gui.dead(depth, run) shows them as rows, each with a sprite icon instead of a text label (stairsDown: floor reached; gold: "N · N spent"; slime: enemies killed; openedChest: chests opened), left-aligned (#menu.dead #hint flex column, .stat rows); the RETRY button sits lower (#menu.dead #menu-button margin-top 168px).
 
 ## 2026-10-11 - Death backdrop and fades
 

@@ -78,11 +78,20 @@ class Gui {
     Gui.$menuControls.hidden = true;
   }
 
-  /** Death screen: button lower and locked for a moment, so attack clicks can't hit it */
-  static dead(depth, gold) {
+  /**
+   * Death screen: button lower and locked for a moment, so attack clicks can't hit it
+   * @param {{coins, spent, kills, chests}} run - Game.run, one icon row each with the floor
+   */
+  static dead(depth, {coins, spent, kills, chests}) {
     Gui.$popover.hidden = true;
     Gui.$vignette.classList.remove('dark', 'red');
-    Gui.menu('YOU DIED', 'RETRY', `floor ${depth}, ${gold} gold. the next dungeon is built around your click`, true);
+    Gui.menu('YOU DIED', 'RETRY', '', true);
+    Gui.$hint.innerHTML = [
+      ['stairsDown', depth],
+      ['gold', `${coins} · ${spent} spent`],
+      ['slime', kills],
+      ['openedChest', chests]
+    ].map(([sprite, text]) => `<span class="stat"><img class="icon" src="${Sprites.src(sprite)}" alt="">${text}</span>`).join('');
 
     Gui.$button.disabled = true;
     let left = Gui.RETRY_DELAY;

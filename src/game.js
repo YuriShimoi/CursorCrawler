@@ -46,6 +46,7 @@ class Game {
   static arenaSeal    = null; // {x, y, tile} passages walled up while fighting the boss
   static descending   = false;
   static credits      = false; // in the credits room (Credits), shown once per run
+  static run          = {};    // numbers for the death screen: coins got and spent, kills, chests opened
   static shop         = null; // open Shop, holding the dungeon floor and entities in .saved
   static buildFloor   = null; // test hook: (cols, rows, start, depth) => {floor, entities, actors, arena}
 
@@ -156,6 +157,7 @@ class Game {
     Game.stats = {hp: 3, maxHp: 3, gold: 0, keys: 0, bombs: 1, ...stats};
     Game.depth = depth - 1;
     Game.credits = false;
+    Game.run = {coins: 0, spent: 0, kills: 0, chests: 0};
     Game.invulnerable = 0;
     Game.descending = false;
     Game.darkness(true);
@@ -259,7 +261,7 @@ class Game {
     Game.unsealArena();
     Game.darkness(false);
     document.exitPointerLock();
-    Gui.dead(Game.depth, Game.stats.gold);
+    Gui.dead(Game.depth, Game.run);
   }
 
   /** Fades the light layer out (whole floor in view, like the start screen) or snaps it back */
@@ -576,6 +578,8 @@ class Game {
 
       case 'buy':
         stats.gold -= e.price;
+        Game.run.spent += e.price;
+        Game.run.chests++;
         e.opened = true;
         e.items.forEach((g, i) => Game.give(g.type, g.amount, e.cx, e.cy - 14 * i));
         Game.drawFloor();
@@ -583,6 +587,7 @@ class Game {
 
       case 'heal':
         stats.gold -= e.price;
+        Game.run.spent += e.price;
         stats.hp++;
         e.uses--;
         Game.float(`+${Game.hearts(1)}`, hero.x, hero.y - 12, '#ff5555');
@@ -617,6 +622,7 @@ class Game {
         Sound.play('open');
         if(!e.unlocked) stats.keys--;
         e.opened = true;
+        Game.run.chests++;
         Game.give('gold', 10 + Game.depth * 2 + Math.floor(Math.random() * 10), e.cx, e.cy);
         if(Math.random() < 0.5)  Game.give('bomb', 1, e.cx, e.cy - 14);
         if(Math.random() < 0.35) Game.give('item', 1, e.cx, e.cy - 28);
@@ -668,6 +674,7 @@ class Game {
         // every coin drop goes through here
         amount = Math.max(1, Math.round(amount * Game.GOLD_RATE));
         stats.gold += amount;
+        Game.run.coins += amount;
         Game.float(`+${amount} gold`, x, y, '#f1fa8c');
         break;
       case 'key':
@@ -756,6 +763,7 @@ class Game {
   }
 
   static kill(actor) {
+    Game.run.kills++;
     actor.died();
     Effects.death(actor);
     Sound.play(actor instanceof Boss? 'boss': 'kill');
