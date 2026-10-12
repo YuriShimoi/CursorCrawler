@@ -289,6 +289,8 @@ class Enemy extends Actor {
   pathStep(goal) {
     const floor = Game.floor;
     const cols = floor.cols;
+    // off the map (the dead hero is moved far away): walking back from it never reaches the start
+    if(goal.x < 0 || goal.y < 0 || goal.x >= cols || goal.y >= floor.rows) return null;
     const start = this.ty * cols + this.tx, target = goal.y * cols + goal.x;
     if(start === target) return null;
 

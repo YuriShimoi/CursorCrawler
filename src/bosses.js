@@ -8,6 +8,8 @@ class Necromancer extends Boss {
   static CAST        = 1.4; // s standing still, spots marked, before the wave rises
   static SHIELD_DOWN = 6;   // s the shield stays broken
   static SHIELD_HITS = 4;   // shots to break it, a bomb breaks it at once
+  static CROWD       = 5;   // no new wave while this many enemies are in the arena
+  static MINION_HP   = 10;  // floors per +1 minion hp
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier);
@@ -51,7 +53,10 @@ class Necromancer extends Boss {
 
   /** Stops and marks where the wave will rise */
   cast(count) {
-    const cells = this.spots(count);
+    const a = Game.arena;
+    const crowd = Game.actors.filter(o => o.alive && o instanceof Enemy &&
+      o.tx >= a.x && o.tx < a.x + a.width && o.ty >= a.y && o.ty < a.y + a.height).length;
+    const cells = crowd < Necromancer.CROWD? this.spots(count): [];
     if(!cells.length) {
       this.waveTimer = 2;
       return;
@@ -61,7 +66,7 @@ class Necromancer extends Boss {
     Game.float('rise!', this.cx, this.cy - 44, '#bd93f9');
   }
 
-  /** The marked minions come up, at half the health of their kind on this floor */
+  /** The marked minions come up, at half the base health of their kind, +1 every MINION_HP floors */
   raise() {
     const T = Floor.TILE;
     const pool = Necromancer.MINIONS;
@@ -70,7 +75,9 @@ class Necromancer extends Boss {
       let roll = Math.random() * total;
       const Kind = pool.find(m => (roll -= m.weight) < 0)?.kind ?? Enemy;
       const minion = new Kind((x + 0.5) * T, (y + 0.5) * T, this.tier);
-      minion.hp = minion.maxHp = Math.max(1, Math.ceil(minion.maxHp / 2));
+      // halving the floor bonus too used to swallow it: halve the base only
+      const base = minion.maxHp - Enemy.extraHp();
+      minion.hp = minion.maxHp = Math.max(1, Math.ceil(base / 2)) + Math.floor(Game.depth / Necromancer.MINION_HP);
       minion.provoke();
       Game.actors.push(minion);
       this.minions.push(minion);

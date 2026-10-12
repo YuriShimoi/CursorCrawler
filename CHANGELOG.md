@@ -126,6 +126,9 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Beholder: every 3-6s it lunges ~90px at the hero with no warning (150px/s for 0.6s); other bosses built on Boss don't lunge.
 - Bosses never lose the hero once triggered (seen once or the arena sealed): new Boss.hunting replaces the sight checks in Boss, Necromancer and Golem.
 - Golem walks in strides like the zombie but off the grid: 0.3s eased stride (~0.45 tile) then 0.5s pause, leaning into each stride; Golem.SPEED replaced by Golem.STEP.
+- Necromancer only raises a wave while fewer than 5 enemies are in the arena (Necromancer.CROWD); otherwise it retries 2s later.
+- Necromancer minion hp fix: halving the whole hp also halved the floor bonus (Enemy.extraHp), which often rounded it away; minions now get half their kind's base hp, plus 1 every 10 floors (Necromancer.MINION_HP).
+- Fix: the page froze after dying, mostly in boss fights. Game.die moves the hero to -10000,-10000, and an enemy still chasing (provoked minions, alert zombies) ran Enemy.pathStep to an off-map tile; the walk back from the target never reached the start (infinite loop). pathStep now returns null for goals outside the grid.
 
 ## 2026-10-11 - Death backdrop and fades
 
