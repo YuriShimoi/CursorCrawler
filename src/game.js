@@ -868,17 +868,29 @@ class Game {
     if(b.hostile) {
       Game.float('BOOM', b.x, b.y, '#ff5555');
       if(Math.hypot(Game.hero.x - b.x, Game.hero.y - b.y) <= reach + 8) Game.hurt(b.damage, b.x, b.y);
+      // goblin bombs don't pick sides: enemies in the same small radius take the same damage
+      Game.actors.forEach(a => {
+        if(!a.alive || !a.hittable || a.distanceTo(b.x, b.y) > reach) return;
+        a.hit(b.damage, b.x, b.y, 'blast');
+        if(!a.alive) Game.kill(a);
+      });
       return;
     }
 
     Game.float('BOOM', b.x, b.y, '#8be9fd');
-    Game.actors.forEach(a => {
-      const d = a.distanceTo(b.x, b.y);
-      if(!a.alive || !a.hittable || d > actorReach) return;
-      // full damage near the center, one less per third of the reach, at least 1
+    // full damage near the center, one less per third of the reach, at least 1
+    const blast = (a, d) => {
       a.hit(Math.max(1, Math.ceil(damage * (1 - d / actorReach))), b.x, b.y, 'blast');
       if(!a.alive) Game.kill(a);
+    };
+    Game.actors.forEach(a => {
+      const d = a.distanceTo(b.x, b.y);
+      if(a.alive && a.hittable && d <= actorReach) blast(a, d);
     });
+    // sleeping mimics feel it too: they wake up already hurt
+    Game.entities
+      .filter(e => e.alive && e.mimic && e.distanceTo(b.x, b.y) <= actorReach)
+      .forEach(e => blast(Game.wakeMimic(e), e.distanceTo(b.x, b.y)));
     Game.entities
       .filter(e => e.alive && e.type === 'crack' && e.distanceTo(b.x, b.y) <= reach)
       .forEach(e => Game.openCrack(e));
@@ -952,12 +964,14 @@ class Game {
     if(changed) Game.drawFloor();
   }
 
-  /** A hovered mimic chest jumps out */
+  /** A hovered (or bombed) mimic chest jumps out */
   static wakeMimic(e) {
     e.alive = false;
     Game.drawFloor();
-    Game.actors.push(new Mimic(e.cx, e.cy, Actor.tier(Game.depth)));
+    const mimic = new Mimic(e.cx, e.cy, Actor.tier(Game.depth));
+    Game.actors.push(mimic);
     Game.float('!', e.cx, e.cy - 24, '#ff5555');
+    return mimic;
   }
 
   /** Pull band (donut from min to max), a line from the press point to the hero, and the bomb hold progress */

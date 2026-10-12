@@ -89,10 +89,11 @@ class Actor {
   }
 
   /** A shot hitting from the front of a facing (unit vector): it travels against it */
-  static fromFront(face, cx, cy, fromX, fromY) {
+  /** @param {number} cone - cosine limit, -0.3 blocks within ~72° of the face, -0.5 within 60° */
+  static fromFront(face, cx, cy, fromX, fromY, cone=-0.3) {
     const dx = cx - fromX, dy = cy - fromY;
     const dist = Math.hypot(dx, dy) || 1;
-    return (dx * face.x + dy * face.y) / dist < -0.3;
+    return (dx * face.x + dy * face.y) / dist < cone;
   }
 
   /** Feedback for a hit that did nothing */

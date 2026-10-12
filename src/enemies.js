@@ -5,6 +5,7 @@ class Slime extends Enemy {
   static CALL = 0.3; // chance the first hit makes another slime
   static PAIR = 0.4; // chance a floor spawn comes as a couple (Populate)
   static SPLIT = 2;  // most small slimes left on death, 0 to this
+  static BLAST = 2;  // damage multiplier from explosions
 
   constructor(cx, cy, tier=0, small=false) {
     super(cx, cy, tier, 'slime');
@@ -21,8 +22,9 @@ class Slime extends Enemy {
     }
   }
 
-  hit(...args) {
-    super.hit(...args);
+  /** Explosions hit twice as hard; the first hit may call another slime */
+  hit(damage, fromX, fromY, kind='shot') {
+    super.hit(kind === 'blast'? damage * Slime.BLAST: damage, fromX, fromY, kind);
     if(this.called || !this.alive) return;
     this.called = true;
     if(Math.random() >= Slime.CALL) return;
@@ -111,6 +113,8 @@ class Goblin extends Skeleton {
 /** Knight: slow chaser with a shield up front; shots only hurt from behind or the sides, bombs always */
 class Knight extends Enemy {
   static SHIELD = Floor.TILE; // px, shield sprite drawn size, same pixel scale as the knight
+  static TURN   = Math.PI / 4; // most the shield turns per step, so flanking it opens a window
+  static CONE   = -0.5;        // blocks shots within 60° of the shield (Actor.fromFront)
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier, 'knight');
@@ -118,18 +122,27 @@ class Knight extends Enemy {
     this.diagonal = 0.2;
     this.dash = 0.2;
     this.pause = {chase: 0.75, wander: 1.6};
-    this.dir = [-1, 0]; // the sprite faces left, start with the shield there too
+    this.dir = [-1, 0];
+    this.shield = Math.PI; // angle of the shield; the sprite faces left, start with the shield there too
   }
 
-  /** Unit vector of the shield: the direction of its last step, it only turns when it moves */
+  /** Unit vector of the shield */
   get face() {
+    return {x: Math.cos(this.shield), y: Math.sin(this.shield)};
+  }
+
+  /** The shield only turns when it moves, and at most TURN toward the step, so it lags behind a chase */
+  dashTo(next) {
+    super.dashTo(next);
+    if(!this.to) return;
     const [x, y] = this.dir;
-    const len = Math.hypot(x, y) || 1;
-    return {x: x / len, y: y / len};
+    // shortest signed turn toward the step
+    const delta = Math.atan2(Math.sin(Math.atan2(y, x) - this.shield), Math.cos(Math.atan2(y, x) - this.shield));
+    this.shield += Math.max(-Knight.TURN, Math.min(Knight.TURN, delta));
   }
 
   hit(damage, fromX, fromY, kind='shot') {
-    if(kind === 'shot' && Actor.fromFront(this.face, this.cx, this.cy, fromX, fromY)) {
+    if(kind === 'shot' && Actor.fromFront(this.face, this.cx, this.cy, fromX, fromY, Knight.CONE)) {
       this.blocked();
       this.provoke();
       return;
