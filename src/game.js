@@ -11,7 +11,7 @@ class Game {
   static REVEAL          = 800;  // ms, darkness fading off the floor on death
   static GOBLIN_FUSE     = 1.4;  // s, goblin bombs
   static BOX_BOMB        = 0.1;  // chance a box holds a goblin bomb, on floors that spawned goblins
-  static SLOW            = {time: 2, factor: 0.4}; // web hit: s, movement multiplier
+  static SLOW            = {time: 2, factor: 0.3}; // web hit: s, movement multiplier
   static AIM             = {min: 14, max: 72};  // px pull from the press point: shoots past min, clamped at max
   static GROW_CHANCE     = 0.4;  // a gem at full health adds half a max heart, otherwise gold
   static GOLD_RATE       = 0.5;  // scales every coin drop

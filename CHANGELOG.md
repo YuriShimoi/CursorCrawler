@@ -110,6 +110,7 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Boxes: on floors that spawned a goblin, 10% chance breaking one drops a lit goblin bomb instead of loot (Game.BOX_BOMB, Game.goblinFloor).
 - Spider: shoots a normal hurting projectile instead of the web 15% of the time, or always when the hero is closer than 3 tiles (Spider.BITE).
 - Removed the 'the camp is restless' text on reaching a monster camp floor.
+- Spider web slows harder: hero moves at 30% speed while webbed (Game.SLOW.factor, was 40%).
 - dungeon-forge engine vendored into lib/dungeon-forge/engine (was loaded from the sibling ../dungeon-forge); script tags in index.html and the docs repointed. Added README.md and .gitignore for the public repo YuriShimoi/CursorCrawler.
 - New placeholder sprites in assets/decals/: corpse.png, junk.png, remains.png; Sprites.FOLDERS gets a 'decals' group and the style doc a Decals section.
 - Beholder: every 3-6s it lunges ~90px at the hero with no warning (150px/s for 0.6s); other bosses built on Boss don't lunge.
