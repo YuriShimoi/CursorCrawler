@@ -104,6 +104,12 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Wall/door hue now takes 25 floors for a full turn (Floor.HUE_CYCLE, was 20).
 - Sound (CC0, credits in assets/sounds/CREDITS.md): new src/sound.js. SFX in assets/sounds/sfx named by event: hit (shot lands, enemy survives), kill, hurt, bomb, break, open (chest, shop door in/out, lever), stairs, boss (boss killed), death. No sound for shots, coins or pickups. Ambience: dungeonAmbience loops, cross-fades (1.5s) to darkCavern while a boss room is sealed until the boss dies; starts on the first click into play. Style doc SOUND section lists them from Sound; unused candidates deleted.
 - Ambience starts at the start menu (Sound.init in Game.init, retried on the first click/key when the browser blocks autoplay); every menu, including pause and death during a boss fight, uses dungeonAmbience. Style doc sound list is now just play buttons named by effect/mood.
+- Font Awesome link falls back to the jsDelivr CDN (fontawesome-free 7.3.1, same version as the local copy) when the local css fails to load (index.html, docs).
+- Enemy hp bonus: +1 on floor 5, then every 10 floors (15, 25...) via Enemy.extraHp / Enemy.HP_FLOORS, was +1 per tier (every 5 floors from floor 6). Damage and bosses still scale by tier.
+- Slime King: after 2s of plain walking since a wall bounce, 30% chance (once per bounce) to dash in a random direction until the next wall (SlimeKing.WILD).
+- Boxes: on floors that spawned a goblin, 10% chance breaking one drops a lit goblin bomb instead of loot (Game.BOX_BOMB, Game.goblinFloor).
+- Spider: shoots a normal hurting projectile instead of the web 15% of the time, or always when the hero is closer than 3 tiles (Spider.BITE).
+- Removed the 'the camp is restless' text on reaching a monster camp floor.
 - dungeon-forge engine vendored into lib/dungeon-forge/engine (was loaded from the sibling ../dungeon-forge); script tags in index.html and the docs repointed. Added README.md and .gitignore for the public repo YuriShimoi/CursorCrawler.
 - New placeholder sprites in assets/decals/: corpse.png, junk.png, remains.png; Sprites.FOLDERS gets a 'decals' group and the style doc a Decals section.
 - Beholder: every 3-6s it lunges ~90px at the hero with no warning (150px/s for 0.6s); other bosses built on Boss don't lunge.

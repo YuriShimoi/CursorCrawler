@@ -54,7 +54,7 @@ class Slime extends Enemy {
 class Mimic extends Enemy {
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier, 'mimic');
-    this.hp = this.maxHp = 4 + tier;
+    this.hp = this.maxHp = 4 + Enemy.extraHp();
     this.damage++;
     this.diagonal = 0.4;
     this.dash = 0.1;
@@ -71,6 +71,8 @@ class Mimic extends Enemy {
 
 /** Spider: waits still until it sees the hero, then keeps away spitting webs that slow it */
 class Spider extends Skeleton {
+  static BITE = {chance: 0.15, close: Floor.TILE * 3}; // a plain hurting shot instead of the web: sometimes, or always when the hero is this close
+
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier, 'spider');
     this.reloadTime = 2.5;
@@ -78,6 +80,8 @@ class Spider extends Skeleton {
   }
 
   shot() {
+    const {hero} = Game;
+    if(Math.random() < Spider.BITE.chance || Math.hypot(hero.x - this.cx, hero.y - this.cy) < Spider.BITE.close) return super.shot();
     // a bit faster than other shots; sticks to the wall it hits for a while, still slowing on touch
     return {damage: 0, sprite: 'web', effect: 'slow', speed: Projectile.SPEED * 1.25, stick: 3};
   }
@@ -110,7 +114,7 @@ class Knight extends Enemy {
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier, 'knight');
-    this.hp = this.maxHp = 3 + tier;
+    this.hp = this.maxHp = 3 + Enemy.extraHp();
     this.diagonal = 0.2;
     this.dash = 0.2;
     this.pause = {chase: 0.75, wander: 1.6};

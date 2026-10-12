@@ -10,6 +10,7 @@ class Game {
   static SHOP_FADE       = 150;  // ms, shop room in and out
   static REVEAL          = 800;  // ms, darkness fading off the floor on death
   static GOBLIN_FUSE     = 1.4;  // s, goblin bombs
+  static BOX_BOMB        = 0.1;  // chance a box holds a goblin bomb, on floors that spawned goblins
   static SLOW            = {time: 2, factor: 0.4}; // web hit: s, movement multiplier
   static AIM             = {min: 14, max: 72};  // px pull from the press point: shoots past min, clamped at max
   static GROW_CHANCE     = 0.4;  // a gem at full health adds half a max heart, otherwise gold
@@ -177,6 +178,8 @@ class Game {
     const {entities, actors, arena, camp} = built ?? Populate.run(Game.floor, Game.depth);
     Game.entities = entities;
     Game.actors = actors;
+    // boxes may hide a goblin bomb on floors where goblins showed up
+    Game.goblinFloor = actors.some(a => a instanceof Goblin);
     // the monster camp gets the arena's full-room light too; only a boss seals it
     Game.arena = arena ?? camp;
     Game.arenaSeal = null;
@@ -670,6 +673,11 @@ class Game {
 
   /** Loot from a broken jar (coins only) or box */
   static dropFrom(e) {
+    if(e.type === 'box' && Game.goblinFloor && Math.random() < Game.BOX_BOMB) {
+      Game.float('a bomb!', e.cx, e.cy - 10, '#ff5555');
+      Game.throwBomb(e.cx, e.cy, 1 + Math.floor(Actor.tier(Game.depth) / 2));
+      return;
+    }
     const roll = Math.random();
     if(e.type === 'jar') {
       if(roll < 0.6) Game.give('gold', 1 + Math.floor(Math.random() * (2 + Game.depth)), e.cx, e.cy);

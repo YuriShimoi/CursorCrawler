@@ -161,11 +161,18 @@ class Enemy extends Actor {
   static PAUSE = {chase: 0.3, wander: 1.2}; // s between dashes
   static DIRS  = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   static DIAGONALS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+  static HP_FLOORS = {first: 5, every: 10}; // +1 hp on floor 5, then 15, 25...
 
-  /** @param {number} tier - Actor.tier: +1 hp per tier, +1 damage every 2 tiers */
+  /** Extra hp at the current floor; none outside a run (docs) */
+  static extraHp(depth=globalThis.Game?.depth ?? 0) {
+    const {first, every} = Enemy.HP_FLOORS;
+    return depth < first? 0: 1 + Math.floor((depth - first) / every);
+  }
+
+  /** @param {number} tier - Actor.tier: +1 damage every 2 tiers (hp grows with Enemy.extraHp) */
   constructor(cx, cy, tier=0, sprite='zombie') {
     // box covers the tile: it touches the hero when sharing a tile
-    super(cx, cy, {hp: 2 + tier, half: Floor.TILE / 2 - 2, sprite, damage: 1 + Math.floor(tier / 2)});
+    super(cx, cy, {hp: 2 + Enemy.extraHp(), half: Floor.TILE / 2 - 2, sprite, damage: 1 + Math.floor(tier / 2)});
     const T = Floor.TILE;
     this.tier = tier;
     this.tx = Math.floor(cx / T);

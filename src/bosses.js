@@ -143,6 +143,7 @@ class SlimeKing extends Boss {
   static BIG    = 0.4; // below this health share the split slimes come out full size
   static RAGE   = [{below: 0.25, boost: 1.3}, {below: 0.5, boost: 1.15}]; // extra speed under these health shares
   static DASH   = {chance: 0.4, reach: Floor.TILE * 12, boost: 2.2}; // on a wall bounce, at the hero in reach, until the next wall
+  static WILD   = {after: 2, chance: 0.3}; // s of plain walking after a bounce, then maybe a dash in a random direction
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier);
@@ -153,11 +154,14 @@ class SlimeKing extends Boss {
     this.vx = Math.cos(angle);
     this.vy = Math.sin(angle);
     this.dashing = false;
+    this.walked = 0;     // s of plain walking since the last bounce
+    this.rolled = false; // the wild dash was already rolled for this bounce
   }
 
   update(dt) {
     // waits until the hero is locked in with it
     if(Game.arenaSeal) {
+      if(!this.dashing && !this.rolled && (this.walked += dt) >= SlimeKing.WILD.after) this.wildDash();
       const left = this.hp / this.maxHp;
       const rage = SlimeKing.RAGE.find(r => left <= r.below)?.boost ?? 1;
       const speed = (SlimeKing.SPEED.max - (SlimeKing.SPEED.max - SlimeKing.SPEED.min) * left) * rage
@@ -171,8 +175,20 @@ class SlimeKing extends Boss {
     Actor.prototype.update.call(this, dt);
   }
 
+  /** Once per bounce, after walking a while: sometimes dashes off in a random direction */
+  wildDash() {
+    this.rolled = true;
+    if(Math.random() >= SlimeKing.WILD.chance) return;
+    const angle = Math.random() * Math.PI * 2;
+    this.vx = Math.cos(angle);
+    this.vy = Math.sin(angle);
+    this.dashing = true;
+  }
+
   /** A wall ends a dash; sometimes it launches straight at the hero when close enough */
   bounce() {
+    this.walked = 0;
+    this.rolled = false;
     const {hero} = Game;
     const dx = hero.x - this.cx, dy = hero.y - this.cy, dist = Math.hypot(dx, dy);
     this.dashing = dist > 0 && dist <= SlimeKing.DASH.reach && Math.random() < SlimeKing.DASH.chance;
