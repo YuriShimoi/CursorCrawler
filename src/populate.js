@@ -9,7 +9,8 @@ class Populate {
     const rng = new Random(`${floor.data.seed}|populate`);
     const T = Floor.TILE;
     const {start, end} = floor;
-    const rooms = floor.data.rooms;
+    // the tutorial room stays bare: nothing is placed in it
+    const rooms = floor.data.rooms.filter(r => !floor.tutorial || r.x !== floor.tutorial.x || r.y !== floor.tutorial.y);
     const entities = [], actors = [];
     const taken = new Set();
     const key = (x, y) => y * floor.cols + x;

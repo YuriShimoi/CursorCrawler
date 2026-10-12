@@ -12,7 +12,7 @@ class Floor {
   // colors of floor 1; walls and doors drift in hue on deeper floors
   static COLOR = {
     floor      : '#212121',
-    grid       : '#1a1a1a',
+    grid       : '#1c1c1c', // tile outlines, faint: the floor color 35% of the way from #1a1a1a
     wall       : '#44475a',
     wallShade  : '#2e3040',
     door       : '#34363f'
@@ -72,6 +72,22 @@ class Floor {
   }
 
   /**
+   * dungeon-forge layout for the first floor: bsp, with the start room swapped for the tutorial room and the rooms it overlaps dropped.
+   * The room sits so the up stairs land on a tile no drawing touches, when the map edge allows
+   */
+  static tutorialLayout(rng, opt) {
+    const {width: w, height: h} = Tutorial.SIZE;
+    const s = opt.start;
+    const free = Tutorial.freeTiles()
+      .map(t => ({x: s.x - t.x, y: s.y - t.y}))
+      .filter(c => c.x >= 1 && c.y >= 1 && c.x + w <= opt.width - 1 && c.y + h <= opt.height - 1);
+    const corner = free.length? rng.pick(free): {x: Layout.fit(rng, 1, opt.width - 2, w, s.x), y: Layout.fit(rng, 1, opt.height - 2, h, s.y)};
+    const room = new Room(corner.x, corner.y, w, h);
+    room.anchor = {...opt.start};
+    return [room, ...Layout.bsp(rng, opt).filter(r => !r.anchor && !r.intersects(room, 2))];
+  }
+
+  /**
    * @param {number} cols - map width in tiles
    * @param {number} rows - map height in tiles
    * @param {{x:number, y:number}} start - up stairs tile
@@ -84,12 +100,16 @@ class Floor {
     const camp = Math.min(max, base + step * (Actor.tier(depth) - 1));
     this.isCampFloor = !this.isBossFloor && depth > Floor.BOSS_EVERY && Math.random() < camp;
 
+    // the first floor of a run starts in the tutorial room (rectangular rooms there, it can't be reshaped);
     // boss and camp floors: one big room among scattered ones
+    const tutorial = depth === 1 && start && typeof Tutorial !== 'undefined';
     const layout =
+      tutorial?         {layout: 'tutorial', roomParts: 0}:
       this.isBossFloor? {layout: 'arena', roomParts: 0, rooms: 9, attempts: 400}:
       this.isCampFloor? {layout: 'arena', big: Floor.CAMP, roomParts: 0, rooms: 9, attempts: 400}:
                         {layout: 'bsp', roomParts: 2};
     Layout.TYPES.arena ??= Floor.arenaLayout;
+    Layout.TYPES.tutorial ??= Floor.tutorialLayout;
 
     this.data = DungeonForge.generate({
       width    : cols,
@@ -103,6 +123,9 @@ class Floor {
     });
     this.cols = cols;
     this.rows = rows;
+    // the tutorial room is the first one the layout returns
+    const first = this.data.rooms[0];
+    this.tutorial = tutorial? {x: first.x, y: first.y, width: first.width, height: first.height}: null;
     this.solid = new Set();   // tiles blocked by props, as y * cols + x
     this.hazards = new Set(); // spike tiles, same keys
     this.spikesOn = true;

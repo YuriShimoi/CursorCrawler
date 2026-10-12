@@ -114,37 +114,31 @@
     <!-- shrinks to the title so the font info lines up with its right edge -->
     <div style="width: fit-content; margin: 28px auto 24px;">
       <div class="game-title">CURSOR CRAWLER</div>
-      <p class="note" style="margin: 4px 0 0; text-align: right">Jersey 10 · 5.5rem · hard shadow</p>
     </div>
     <p class="note" style="color: #f8f8f2">Style reference, drawn live with the game's own code and CSS.</p>
 
     <h2>COLOR</h2>
     <h3>Map</h3>
-    <p class="note">Floor.COLOR</p>
     <div class="palette" id="palette-map"></div>
     <h3>UI</h3>
-    <p class="note">src/style.css</p>
     <div class="palette" id="palette-ui"></div>
 
     <h2>MAP</h2>
     <h3>Tiles</h3>
-    <p class="note">36px, shown at 3x</p>
     <div class="grid" id="tiles"></div>
     <h3>Wall hue by floor</h3>
-    <p class="note" id="wall-hue-note"></p>
     <div class="palette" id="wall-hue"></div>
     <h3>Noise</h3>
-    <p class="note" id="noise-note"></p>
     <div class="grid" id="noise"></div>
     <h3>Sample room</h3>
-    <p class="note">unlit · lit by the hero</p>
     <div class="grid" id="room"></div>
+    <h3>Tutorial room</h3>
+    <div class="grid" id="tutorial"></div>
 
     <h2>UI</h2>
     <h3>Menu</h3>
     <div class="ui"><button id="menu-button">START</button></div>
     <h3>HUD</h3>
-    <p class="note">sprite icons at 2x · hearts count half hearts</p>
     <div class="ui">
       <div id="hud">
         <div class="hud-row">
@@ -181,13 +175,10 @@
       </div>
     </div>
     <h3>Popovers</h3>
-    <p class="note">greyed out when unavailable · shop chests list their goods</p>
     <div class="grid" id="bubbles"></div>
 
     <h2>SPRITES</h2>
-    <p class="note">assets/&lt;group&gt;/ · 12x12 (bosses 24x24) · shown at 2x</p>
     <h3>Cursor</h3>
-    <p class="note">the tip is the position · hand over interactive things</p>
     <div class="grid" id="cursor"></div>
     <h3>Props</h3>
     <div class="grid" id="sprites-props"></div>
@@ -206,10 +197,8 @@
 
     <h2>SOUND</h2>
     <h3>Effects</h3>
-    <p class="note">assets/sounds/sfx · Sound.SFX</p>
     <div class="sounds" id="sfx"></div>
     <h3>Ambience</h3>
-    <p class="note">assets/sounds/ambience · Sound.AMBIENCE, looped, click again to stop</p>
     <div class="sounds" id="ambience"></div>
     <p class="note">Effects: "The Essential Retro Video Game Sound Effects Collection" by Juhani Junkala (CC0) · Ambience: JaggedStone, Paul Wortmann (CC0), via OpenGameArt</p>
   </main>
@@ -221,6 +210,7 @@
   <script src="../src/sprites.js"></script>
   <script src="../src/light.js"></script>
   <script src="../src/sound.js"></script>
+  <script src="../src/tutorial.js"></script>
   <script>
     const T = Floor.TILE;
     const GLYPH = {
@@ -326,8 +316,8 @@
         ['border',       '#44475a'],
         ['text',         '#f8f8f2'],
         ['muted',        '#6272a4'],
-        ['button',       '#bd93f9'],
-        ['button hover', '#8a63c9'],
+        ['button',       '#8a63c9'],
+        ['button hover', '#bd93f9'],
         ['accent',       '#50fa7b'],
         ['shadow',       '#000000']
       ].forEach(([name, color]) => swatch('palette-ui', name, color));
@@ -335,7 +325,6 @@
 
       //#region [ WALL HUE ]
       // one full turn of the wall color, a band per floor
-      document.getElementById('wall-hue-note').textContent = `the wall tile on each floor, Floor.HUE_CYCLE = ${Floor.HUE_CYCLE} floors, then it repeats`;
       for(let depth = 1; depth <= Floor.HUE_CYCLE; depth++) {
         const wall = makeFloor(['#']);
         wall.depth = depth;
@@ -359,13 +348,20 @@
       //#endregion
 
       //#region [ NOISE ]
-      const {cell, floor: nf, wall: nw} = Floor.NOISE;
-      document.getElementById('noise-note').textContent =
-        `Floor.NOISE · ${cell}px cells · floor ${nf.tile} + ${nf.grain} · wall ${nw.tile} + ${nw.grain} (black alpha)`;
-
       const patch = ['####', '#..#', '#..#', '####'];
       withoutNoise(() => card('noise', drawFloor(makeFloor(patch), 2), 'without noise', 'flat colors'));
       card('noise', drawFloor(makeFloor(patch), 2), 'with noise', 'as in game');
+      //#endregion
+
+      //#region [ TUTORIAL ]
+      {
+        const {width: W, height: H} = Tutorial.SIZE;
+        const wall = '#'.repeat(W + 2);
+        const sketch = [wall, ...Array(H).fill(`#${'.'.repeat(W)}#`), wall];
+        const el = drawFloor(makeFloor(sketch), 1);
+        Tutorial.draw(el.getContext('2d'), {x: 1, y: 1, width: W, height: H});
+        card('tutorial', el, 'tutorial room', `Tutorial.draw · ${Tutorial.ALPHA * 100}% shade`);
+      }
       //#endregion
 
       //#region [ CURSOR ]

@@ -426,6 +426,7 @@ class Game {
       Effects.drawDecals(ctx);
       entities.forEach(e => e.alive && e.draw(e.wall? wctx: ctx, floor));
       if(floor.credits) Credits.draw(ctx, floor.credits);
+      if(floor.tutorial) Tutorial.draw(ctx, floor.tutorial);
     });
 
     if(!Game.shop) return;
@@ -1059,8 +1060,8 @@ class Game {
     ctx.stroke();
     ctx.fillRect(Math.round(aim.x) - 2, Math.round(aim.y) - 2, 4, 4);
 
-    // quick presses don't flash it
-    if(aim.hold < 0.25) return;
+    // shown from the press on, so holding still reads as charging right away
+    if(!aim.hold) return;
     ctx.strokeStyle = '#8be9fd';
     ctx.beginPath();
     ctx.arc(aim.x, aim.y, min - 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * aim.hold / Game.BOMB.hold);
