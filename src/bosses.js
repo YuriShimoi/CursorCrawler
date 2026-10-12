@@ -423,6 +423,7 @@ class Worm extends Boss {
   // chance per surfacing (never twice in a row; low below the low health share), s between marks, first pop, s between pops,
   // s up after the last, shots per ring
   static TRIPLE  = {chance: 0.3, low: 0.6, below: 0.4, mark: 0.2, first: 0.8, gap: 0.4, last: 1.4, ring: 8};
+  static RISE    = 0.18; // s the sprite takes to slide out of the ground, or back into it
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier);
@@ -432,11 +433,15 @@ class Worm extends Boss {
     this.state = 'up';
     this.timer = 0;
     this.attack = null;
+    this.rising = Worm.RISE; // s into coming up, starts fully out
+    this.sinking = 0;        // s left of going down
   }
 
   get hittable() { return this.state === 'up' || (this.state === 'triple' && this.triple.i >= 0); }
 
   update(dt) {
+    this.rising = Math.min(Worm.RISE, this.rising + dt);
+    this.sinking = Math.max(0, this.sinking - dt);
     // waits up and still until the hero is locked in with it
     if(Game.arenaSeal) {
       if(this.state === 'triple') this.tripleStep(dt);
@@ -464,6 +469,7 @@ class Worm extends Boss {
         const [lo, hi] = Worm.TIMES.under;
         this.state = 'under';
         this.timer = (chain? Worm.TIMES.quick: lo + Math.random() * (hi - lo)) * this.pace;
+        this.dig('sinking');
         break;
       }
       case 'under': {
@@ -485,6 +491,7 @@ class Worm extends Boss {
       case 'warn':
         this.state = 'up';
         this.timer = Worm.TIMES.up * this.pace;
+        this.dig('rising');
         this.volley();
         break;
     }
@@ -561,8 +568,11 @@ class Worm extends Boss {
     tr.t += dt / this.pace;
     const n = tr.i + 1;
     if(n < tr.spots.length && tr.t >= first + n * gap) {
+      // dives out of the last spot, then pops up at the next
+      if(n > 0) this.dig('sinking');
       tr.i = n;
       ({x: this.cx, y: this.cy} = tr.spots[n]);
+      this.dig('rising');
       const count = Math.round(ring * (this.enraged? 1.5: 1)), turn = Math.random() * Math.PI * 2;
       for(let i = 0; i < count; i++) this.queue.push({delay: 0, angle: turn + i * Math.PI * 2 / count});
     }
@@ -589,7 +599,42 @@ class Worm extends Boss {
     return pick && {x: (pick.x + 0.5) * T, y: (pick.y + 0.5) * T};
   }
 
+  /** Starts coming up or going down where it stands, kicking up dirt */
+  dig(way) {
+    if(way === 'rising') this.rising = 0;
+    else {
+      this.sinking = Worm.RISE;
+      this.sunk = {x: this.cx, y: this.cy};
+    }
+    Effects.burst(this.cx, this.cy + Floor.TILE * 0.8, {count: 8, colors: Effects.COLORS.dirt, speed: 70, life: 0.5, gravity: 260, spread: Floor.TILE});
+  }
+
+  /** The sprite pushed down by the part still underground, cut at the ground line; k = share above ground */
+  drawRisen(ctx, x, y, k) {
+    const size = Floor.TILE * this.tiles;
+    const ground = Math.round(y + size / 2);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - size, ground - size * 2, size * 2, size * 2);
+    ctx.clip();
+    ctx.translate(x - this.cx, y - this.cy + Math.round((1 - k) * size));
+    this.digK = k;
+    super.draw(ctx);
+    ctx.restore();
+  }
+
+  /** Stretches up a little while passing through the ground, back to the floating wobble once out */
+  squish() {
+    if(this.digK < 1) {
+      const s = Math.sin(this.digK * Math.PI) * 0.1;
+      return [1 - s, 1 + s];
+    }
+    return super.squish();
+  }
+
   draw(ctx) {
+    // going down where it last stood, while the next spot may already show its mark
+    if(this.sinking > 0) this.drawRisen(ctx, this.sunk.x, this.sunk.y, this.sinking / Worm.RISE);
     if(this.state === 'under') return;
     if(this.state === 'warn') return Actor.drawMark(ctx, this.cx, this.cy, this.timer);
     if(this.state === 'triple') {
@@ -600,6 +645,7 @@ class Worm extends Boss {
       });
       if(tr.i < 0) return;
     }
-    super.draw(ctx);
+    if(this.sinking > 0 && this.sunk.x === this.cx && this.sunk.y === this.cy) return;
+    this.drawRisen(ctx, this.cx, this.cy, this.rising / Worm.RISE);
   }
 }

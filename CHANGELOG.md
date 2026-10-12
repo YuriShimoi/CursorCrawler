@@ -115,6 +115,8 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Slimes (and small slimes) take double damage from explosions (Slime.BLAST); the Slime King doesn't.
 - Goblin bombs (thrown or from boxes) also hurt enemies within their blast radius, same damage as to the hero.
 - Knight fix: the shield no longer snaps to each step (a chasing knight always faced the hero, blocking from every side). It turns at most 45° per step (Knight.TURN) and blocks within 60° of its facing (Knight.CONE, was ~72°); Actor.fromFront takes a cone argument.
+- Boss damage grows 0.75 half heart per tier, rounded (Boss.DAMAGE), was 1: tiers 1-6 now hit for 2, 3, 3, 4, 5, 6 instead of 2-7.
+- Worm digs: slides up out of the ground when surfacing and back down when diving (0.18s, Worm.RISE), clipped at its ground line, with a puff of dirt bits (Effects.COLORS.dirt); also between the triple attack's pops. Visual only, timing and hit windows unchanged. It stretches slightly (up to 10%) while passing through the ground.
 - dungeon-forge engine vendored into lib/dungeon-forge/engine (was loaded from the sibling ../dungeon-forge); script tags in index.html and the docs repointed. Added README.md and .gitignore for the public repo YuriShimoi/CursorCrawler.
 - New placeholder sprites in assets/decals/: corpse.png, junk.png, remains.png; Sprites.FOLDERS gets a 'decals' group and the style doc a Decals section.
 - Beholder: every 3-6s it lunges ~90px at the hero with no warning (150px/s for 0.6s); other bosses built on Boss don't lunge.

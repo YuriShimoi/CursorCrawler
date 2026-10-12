@@ -61,7 +61,8 @@ class Effects {
   // every enemy and boss shares the dungeon's red, props their wood tones; all fade into the wall shade
   static COLORS = {
     blood: ['#ff5555', '#8f2c2c', '#2e3040'],
-    wood : ['#ffb86c', '#b8763a', '#2e3040']
+    wood : ['#ffb86c', '#b8763a', '#2e3040'],
+    dirt : ['#8f2c2c', '#2e3040']
   };
 
   static POP       = 0.15; // s, the flatten before an enemy bursts
