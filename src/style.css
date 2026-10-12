@@ -97,10 +97,23 @@ html, body {
   background-color: #bd93f9;
 }
 
+#menu-controls {
+  position: absolute;
+  top: calc(50% + 80px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  color: #6272a4;
+}
+
+#menu-controls[hidden] { display: none; }
+
 /* death screen: run info above, button pushed down away from where the cursor was */
 #menu.dead #title { top: calc(50% - 170px); }
 #menu.dead #hint  { top: calc(50% - 65px); }
 #menu.dead #menu-button { margin-top: 120px; }
+#menu.dead #menu-controls { top: calc(50% + 160px); }
 
 /* hud bubbles: brutalist block with a touch of glass */
 .bubble {

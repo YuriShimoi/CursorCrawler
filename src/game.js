@@ -366,7 +366,11 @@ class Game {
       actors.clear();
       actors.ctx.translate(offset.x, offset.y);
       Game.drawBombs(actors.ctx);
-      Game.actors.forEach(a => light.isLit(a.cx, a.cy) && a.draw(actors.ctx));
+      Game.actors.forEach(a => {
+        if(!light.isLit(a.cx, a.cy)) return;
+        a.inView = light.inView(a.cx, a.cy);
+        a.draw(actors.ctx);
+      });
       Effects.draw(actors.ctx);
       // the hero's own shots stay visible in the dark
       Game.projectiles.forEach(p => (!p.hostile || light.isLit(p.x, p.y)) && p.draw(actors.ctx));
@@ -578,11 +582,7 @@ class Game {
         break;
 
       case 'break':
-        Sound.play('break');
-        e.alive = false;
-        Effects.shatter(e);
-        Game.dropFrom(e);
-        Game.drawFloor();
+        Game.smash(e);
         break;
 
       case 'light':
@@ -669,6 +669,15 @@ class Game {
   /** Health text counting half hearts as 1: 3 -> '3 ♥' */
   static hearts(halves) {
     return `${halves} ♥`;
+  }
+
+  /** Breaks a jar or box: by hand, a hero bomb, or a hero shot (jars only) */
+  static smash(e) {
+    Sound.play('break');
+    e.alive = false;
+    Effects.shatter(e);
+    Game.dropFrom(e);
+    Game.drawFloor();
   }
 
   /** Loot from a broken jar (coins only) or box */
@@ -859,7 +868,7 @@ class Game {
     Game.blasts = Game.blasts.filter(b => b.t < Game.BOMB.blast);
   }
 
-  /** Hero bombs hurt actors and open cracked walls in reach, never the hero; goblin bombs only hurt the hero */
+  /** Hero bombs hurt actors, break jars and boxes and open cracked walls in reach, never the hero; goblin bombs only hurt the hero */
   static explode(b) {
     const {reach, actorReach, damage} = Game.BOMB;
     Sound.play('bomb');
@@ -894,6 +903,9 @@ class Game {
     Game.entities
       .filter(e => e.alive && e.type === 'crack' && e.distanceTo(b.x, b.y) <= reach)
       .forEach(e => Game.openCrack(e));
+    Game.entities
+      .filter(e => e.alive && (e.type === 'jar' || e.type === 'box') && e.distanceTo(b.x, b.y) <= actorReach)
+      .forEach(e => Game.smash(e));
   }
 
   /** Goblin bomb landing on the tile of a point, its blast area shown on the ground */

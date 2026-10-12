@@ -11,6 +11,7 @@ class Gui {
   static $bombs;
   static $depth;
   static $controls;
+  static $menuControls;
   static $popover;
   static $vignette;
 
@@ -34,6 +35,9 @@ class Gui {
     Gui.$bombs    = document.getElementById('hud-bombs');
     Gui.$depth    = document.getElementById('hud-depth');
     Gui.$controls = document.getElementById('controls');
+    Gui.$menuControls = document.getElementById('menu-controls');
+    // same list as the in-game controls bubble, shown on the start and death screens
+    Gui.$menuControls.innerHTML = Gui.$controls.innerHTML;
     Gui.$popover  = document.getElementById('popover');
     Gui.$vignette = document.getElementById('vignette');
 
@@ -70,6 +74,7 @@ class Gui {
 
   static pause() {
     Gui.menu('PAUSED', 'CONTINUE', 'press Esc anytime to release the cursor');
+    Gui.$menuControls.hidden = true;
   }
 
   /** Death screen: button lower and locked for a moment, so attack clicks can't hit it */
@@ -98,6 +103,7 @@ class Gui {
     Gui.$hint.textContent   = hint;
     Gui.$button.disabled = false;
     Gui.$menu.classList.toggle('dead', dead);
+    Gui.$menuControls.hidden = false;
     Gui.$menu.hidden = false;
   }
   //#endregion

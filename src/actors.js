@@ -149,6 +149,8 @@ class Actor {
     ctx.save();
     ctx.translate(Math.round(this.cx), Math.round(this.cy + size * this.scale / 2));
     ctx.scale(sx * (this.facing ?? 1) * this.scale, sy * this.scale);
+    // faint white border on enemies inside the hero's own light
+    if(this.inView) Sprites.outline(ctx, this.sprite, -size/2, -size);
     Sprites.draw(ctx, this.sprite, -size/2, -size);
     ctx.restore();
   }
@@ -578,6 +580,14 @@ class Projectile {
         else Game.hurt(this.damage, this.x - this.vx, this.y - this.vy);
         this.alive = false;
       }
+      return;
+    }
+
+    // hero shots break jars on the way
+    const jar = Game.entities.find(e => e.alive && e.type === 'jar' && e.distanceTo(this.x, this.y) <= 2);
+    if(jar) {
+      Game.smash(jar);
+      this.alive = false;
       return;
     }
 

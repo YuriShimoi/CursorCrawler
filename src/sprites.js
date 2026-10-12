@@ -21,6 +21,8 @@ class Sprites {
   static TILES = {beholder: 2, necromancer: 2, slimeKing: 2, golem: 2, worm: 2, remains: 2};
 
   static images = {};
+  static silhouettes = {}; // white outline rings, by name and size
+  static OUTLINE     = 2;  // px, outline width
 
   static tiles(name) {
     return Sprites.TILES[name] ?? 1;
@@ -48,6 +50,34 @@ class Sprites {
       img.src = Sprites.src(name);
       Sprites.images[name] = img;
     })));
+  }
+
+  /** White ring W px around an icon at a given size, drawn under it */
+  static outline(ctx, name, px, py, tile=Floor.TILE, alpha=0.8) {
+    const img = Sprites.images[name];
+    if(!img?.complete || !img.naturalWidth) return;
+    const W = Sprites.OUTLINE, size = tile * Sprites.tiles(name);
+    // solid ring made once per icon and size, so overlapping offsets don't stack the alpha
+    const key = `${name}:${size}`;
+    let ring = Sprites.silhouettes[key];
+    if(!ring) {
+      ring = Sprites.silhouettes[key] = document.createElement('canvas');
+      ring.width = ring.height = size + W * 2;
+      const rctx = ring.getContext('2d');
+      rctx.imageSmoothingEnabled = false;
+      for(let dx = -W; dx <= W; dx++)
+        for(let dy = -W; dy <= W; dy++)
+          if(Math.abs(dx) + Math.abs(dy) <= W) rctx.drawImage(img, W + dx, W + dy, size, size);
+      rctx.globalCompositeOperation = 'source-in';
+      rctx.fillStyle = '#ffffff';
+      rctx.fillRect(0, 0, ring.width, ring.height);
+    }
+    const smoothing = ctx.imageSmoothingEnabled, ga = ctx.globalAlpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = ga * alpha;
+    ctx.drawImage(ring, px - W, py - W);
+    ctx.globalAlpha = ga;
+    ctx.imageSmoothingEnabled = smoothing;
   }
 
   /** Draws an icon with its top-left at (px, py) */

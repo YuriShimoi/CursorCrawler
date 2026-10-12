@@ -179,6 +179,11 @@ class Light {
   }
 
   /** Point lit by the hero or any static light */
+  /** Inside the hero's own light, not just a torch or campfire */
+  inView(x, y) {
+    return this.hero.contains(this.memoryCtx, x, y);
+  }
+
   isLit(x, y) {
     const ctx = this.memoryCtx;
     return this.hero.contains(ctx, x, y) || this.sources.some(s => s.contains(ctx, x, y));
