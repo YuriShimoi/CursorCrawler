@@ -136,6 +136,7 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Fix: enemy hp never grew with floors. Enemy.extraHp read globalThis.Game, but a top-level class isn't a property of globalThis, so the bonus was always 0 (in runs and in the arena page). It now checks the Game binding directly. New rule: +1 hp every 10 floors (Enemy.HP_FLOORS = 10: floor 10 +1, 20 +2...), was +1 on floor 5 then every 10.
 - Necromancer minions now get half their kind's base hp plus Enemy.extraHp (Necromancer.MINION_HP removed).
 - Arena page info line sets Game.depth to the chosen floor before reading enemy hp.
+- Start screen subtitle under the title: "a 25 floors demo" on the left and "by. Yuri Shimoi" on the right (#subtitle, a span inside #title, so Gui.menu replacing the title text removes it on the pause and death screens).
 
 ## 2026-10-11 - Death backdrop and fades
 

@@ -50,12 +50,27 @@ html, body {
 
 #title {
   position: absolute;
-  top: calc(50% - 128px);
+  top: calc(50% - 148px);
   margin: 0;
   font: normal 5.5rem 'Title', monospace;
   letter-spacing: 2px;
   line-height: 1;
   text-shadow: 4px 4px 0 #000000;
+}
+
+#subtitle {
+  position: absolute;
+  /* pulled up into the font's empty space below the letters */
+  top: calc(100% - 12px);
+  /* the title's letter spacing leaves a trailing gap on its right */
+  left: 0;
+  right: 2px;
+  display: flex;
+  justify-content: space-between;
+  font: bold 0.85rem monospace;
+  letter-spacing: 0;
+  color: #8a63c9;
+  text-shadow: 1px 1px 0 #000000;
 }
 
 #hint {
@@ -70,7 +85,7 @@ html, body {
   font: bold 1.1rem monospace;
   letter-spacing: 2px;
   color: #1a1a1a;
-  background-color: #bd93f9;
+  background-color: #8a63c9;
   border: 2px solid #f8f8f2;
   border-radius: 3px;
   box-shadow: 4px 4px 0 #44475a;
@@ -79,7 +94,7 @@ html, body {
 }
 
 #menu-button:hover {
-  background-color: #8a63c9;
+  background-color: #bd93f9;
 }
 
 #menu-button:active {
@@ -94,7 +109,7 @@ html, body {
   cursor: default;
   transform: none;
   box-shadow: 4px 4px 0 #44475a;
-  background-color: #bd93f9;
+  background-color: #8a63c9;
 }
 
 #menu-controls {

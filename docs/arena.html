@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cursor Crawler Boss Test</title>
+  <title>Cursor Crawler Boss Arena</title>
 
   <!-- local Font Awesome, the CDN copy of the same version when it's missing -->
   <link rel="stylesheet" href="../../../assets/fontawesome/css/all.min.css" onerror="this.onerror = null; this.href = 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css'">
@@ -37,6 +37,7 @@
       margin: 0;
       font: normal 3rem 'Title', monospace;
       line-height: 1;
+      text-align: center;
       letter-spacing: 2px;
       text-shadow: 3px 3px 0 #000000;
     }
@@ -93,7 +94,7 @@
       font: bold 1rem monospace;
       letter-spacing: 2px;
       color: #1a1a1a;
-      background-color: #bd93f9;
+      background-color: #8a63c9;
       border: 2px solid #f8f8f2;
       border-radius: 3px;
       box-shadow: 4px 4px 0 #44475a;
@@ -101,7 +102,7 @@
       transition: transform 80ms ease, box-shadow 80ms ease;
     }
 
-    #test button:hover  { background-color: #8a63c9; }
+    #test button:hover  { background-color: #bd93f9; }
     #test button:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #44475a; }
     #test button.secondary { color: #f8f8f2; background-color: #44475a; }
     #test button.secondary:hover { background-color: #383a4a; }
@@ -141,7 +142,7 @@
 
       <form id="test" autocomplete="off">
         <div class="panel">
-          <h1>BOSS TEST</h1>
+          <h1>BOSS ARENA</h1>
           <div class="status" id="status"></div>
 
           <div class="row"><label for="boss">entity</label><select id="boss"></select></div>
