@@ -180,7 +180,6 @@ class Game {
     // the monster camp gets the arena's full-room light too; only a boss seals it
     Game.arena = arena ?? camp;
     Game.arenaSeal = null;
-    if(camp) Game.float('the camp is restless', Game.hero.x, Game.hero.y - 20, '#ffb86c');
     Game.bossSeen = false;
     Game.floor.sealed = !!Game.boss;
 
