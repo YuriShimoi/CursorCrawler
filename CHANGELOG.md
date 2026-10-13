@@ -143,6 +143,26 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - Style doc (docs/style.html): removed most notes under titles (kept the intro line and the sound credits); UI palette lists the swapped button colors (button #8a63c9, hover #bd93f9).
 - Fix: loading the game from file:// sometimes threw "SecurityError ... canvas has been tainted" in Tutorial.freeTiles (getImageData on a canvas with sprite images). While measuring (Tutorial.measuring) the sprites are drawn as plain tile boxes through Tutorial.sprite, so the canvas stays readable.
 - Bomb hold arc shows as soon as the hero holds still (Game.drawAim), it used to wait 0.25s.
+- Cracked walls no longer show a hint popover (actionFor 'crack' removed; also removed from the style doc popover list).
+- Health items always add max health and heal the same amount: gem (item) +half a heart max and heals half a heart, shop heart the same, boss heart +1 heart; when max health is capped and health full they give gold (15 per half heart). Game.GROW_CHANCE removed.
+- Boss loot: instead of instant rewards, the boss drops pickups on the free floor tiles nearest its remains: a heart (+1 heart max, new 'heart' pickup entity), gold (30 + floor x3) and a bomb (Game.BOSS_LOOT, Game.bossLoot). A fight without taking damage since the arena sealed (Game.bossHit) also leaves an unlocked chest with a yellow "perfect!" text; it holds gold (40 + floor x5), +1 heart max, 2 bombs, a key and a gem (Game.PERFECT_LOOT).
+- After floor 15 each floor gets 2-3 chests but only a 60% chance of one key (was 1 chest and its key) (Populate.LATE).
+- After floor 20 cracked walls are more common: 90% chance per floor (was 60%) and up to 2 (Populate.secrets).
+- Necromancer: waves only while fewer than 4 enemies are in the arena (CROWD 5 -> 4), waves every 13s (was 9s), the cast lasts 2.2s (was 1.4s) with a side-to-side sway (squish) so it doesn't look frozen, and it shoots ring and spiral volleys too (patterns fan, burst, ring, spiral).
+- Bombs put out lights: hero and goblin bombs douse lit torches (they can be lit again) and campfires in reach (they burn out without healing). Game.douse, also used by resting; Game.blastProps.
+- Goblin bombs break jars and boxes in their small reach, without loot (Game.smash(e, loot)).
+- Boxes hide a goblin bomb 20% of the time on floors with goblins (Game.BOX_BOMB 0.1 -> 0.2).
+- Monster camps always have a campfire, on the free tile nearest the middle of the camp room (Populate.run), on top of the floor's usual random campfire chance.
+- Raised spikes kill walking monsters outright (Game.spikeActors hits for their full hp; bosses and flyers are still spared); the "-1" text is gone.
+- After floor 12 each room corner (start room and boss room excluded) has a 25% chance of spikes (lowered by the floor's lever like the corridor ones), 45% after floor 18, never on a corner where a passage comes in (Populate.LATE.corners, Populate.CORNER_SPIKES).
+- Max health cap raised from 6 to 20 hearts (Game.MAX_HP 12 -> 40 half hearts); the HUD hearts wrap at 10 per row (#hud-hearts flex-wrap, max-width 258px); the arena page max health input goes up to 40.
+- Bosses gain less health per tier: +40% of their base hp per tier, rounded (Boss.HP_TIER), was +50%.
+- Worm fast phase (quicker timings, faster and bigger volleys) starts below 30% health (Worm.ENRAGED.below), was 50%.
+- Necromancer: the first time it drops below half health it raises one big wave of 10 (Necromancer.HORDE), ignoring the crowd cap, with a cast twice as long.
+- Max health is rarer: gems on the floor 15% per floor (was 25%), in chests 20% (was 35%), in boxes 4% (was 8%); the shop's max health good can only show in 40% of offers (Shop.HEART_CHANCE). Boss loot and the perfect chest still always give it.
+- The shop shows max health with the empty heart icon (heartEmpty).
+- Slime King dashes more when desperate: at or below 20% health a wall bounce turns into a dash at the hero 75% of the time (SlimeKing.DASH.low / desperate), 40% otherwise.
+- Golem moves 1.5x faster below half health: its strides and charges run on a faster clock (Golem.HASTE, haste getter); windups, stuns and attack timings are unchanged.
 
 ## 2026-10-11 - Death backdrop and fades
 

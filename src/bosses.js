@@ -4,21 +4,24 @@
 class Necromancer extends Boss {
   // weighted minion pool: mostly zombies and skeletons, spiders now and then, goblins rarely
   static MINIONS = [{kind: Enemy, weight: 4}, {kind: Skeleton, weight: 4}, {kind: Spider, weight: 2}, {kind: Goblin, weight: 1}];
-  static WAVE        = 9;   // s between waves
-  static CAST        = 1.4; // s standing still, spots marked, before the wave rises
+  static WAVE        = 13;  // s between waves
+  static CAST        = 2.2; // s standing still, spots marked, before the wave rises
   static SHIELD_DOWN = 6;   // s the shield stays broken
   static SHIELD_HITS = 4;   // shots to break it, a bomb breaks it at once
-  static CROWD       = 5;   // no new wave while this many enemies are in the arena
+  static CROWD       = 4;   // no new wave while this many enemies are in the arena
+  static HORDE       = 10;  // one big wave the first time it drops below half health, cast for twice as long
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier);
     this.name = 'Necromancer';
     this.sprite = 'necromancer';
     this.setHp(14);
-    this.patterns = ['fan', 'burst'];
+    // shoots more between the rarer waves
+    this.patterns = ['fan', 'burst', 'ring', 'spiral'];
     this.reloadTime = 2.6;
     this.wave = 0;
     this.waveTimer = 2;
+    this.horde = false; // the big wave already raised
     this.minions = [];
     this.casting = null; // {cells, timer} while raising a wave
     this.shieldDown = 0;
@@ -43,24 +46,31 @@ class Necromancer extends Boss {
       return;
     }
 
-    if(this.hunting) {
+    if(this.hunting && this.enraged && !this.horde) {
+      this.horde = true;
+      this.cast(Necromancer.HORDE, true);
+    }
+    else if(this.hunting) {
       this.waveTimer -= dt;
       if(this.waveTimer <= 0) this.cast(Math.min(2 + this.wave, 6) + (this.enraged? 1: 0));
     }
     super.update(dt);
   }
 
-  /** Stops and marks where the wave will rise */
-  cast(count) {
+  /**
+   * Stops and marks where the wave will rise
+   * @param {boolean} horde - the big wave: ignores the crowd cap and takes twice as long
+   */
+  cast(count, horde=false) {
     const a = Game.arena;
     const crowd = Game.actors.filter(o => o.alive && o instanceof Enemy &&
       o.tx >= a.x && o.tx < a.x + a.width && o.ty >= a.y && o.ty < a.y + a.height).length;
-    const cells = crowd < Necromancer.CROWD? this.spots(count): [];
+    const cells = horde || crowd < Necromancer.CROWD? this.spots(count): [];
     if(!cells.length) {
       this.waveTimer = 2;
       return;
     }
-    this.casting = {cells, timer: Necromancer.CAST};
+    this.casting = {cells, timer: Necromancer.CAST * (horde? 2: 1)};
     this.queue = [];
     Game.float('rise!', this.cx, this.cy - 44, '#bd93f9');
   }
@@ -135,9 +145,12 @@ class Necromancer extends Boss {
     ctx.globalAlpha = 1;
   }
 
-  /** Arms up while casting */
+  /** Arms up while casting, swaying side to side so the long cast doesn't look frozen */
   squish() {
-    if(this.casting) return [0.92, 1.1];
+    if(this.casting) {
+      const s = Math.sin(Game.time * 10) * 0.06;
+      return [0.92 + s, 1.1 - s / 2];
+    }
     return super.squish();
   }
 }
@@ -148,7 +161,8 @@ class SlimeKing extends Boss {
   static SLIMES = 8;   // slimes alive at most
   static BIG    = 0.4; // below this health share the split slimes come out full size
   static RAGE   = [{below: 0.25, boost: 1.3}, {below: 0.5, boost: 1.15}]; // extra speed under these health shares
-  static DASH   = {chance: 0.4, reach: Floor.TILE * 12, boost: 2.2}; // on a wall bounce, at the hero in reach, until the next wall
+  // on a wall bounce, at the hero in reach, until the next wall; `desperate` chance at or below `low` of its health
+  static DASH   = {chance: 0.4, low: 0.2, desperate: 0.75, reach: Floor.TILE * 12, boost: 2.2};
   static WILD   = {after: 2, chance: 0.3}; // s of plain walking after a bounce, then maybe a dash in a random direction
 
   constructor(cx, cy, tier=0) {
@@ -197,7 +211,8 @@ class SlimeKing extends Boss {
     this.rolled = false;
     const {hero} = Game;
     const dx = hero.x - this.cx, dy = hero.y - this.cy, dist = Math.hypot(dx, dy);
-    this.dashing = dist > 0 && dist <= SlimeKing.DASH.reach && Math.random() < SlimeKing.DASH.chance;
+    const {chance, low, desperate, reach} = SlimeKing.DASH;
+    this.dashing = dist > 0 && dist <= reach && Math.random() < (this.hp <= this.maxHp * low? desperate: chance);
     if(!this.dashing) return;
     this.vx = dx / dist;
     this.vy = dy / dist;
@@ -235,6 +250,7 @@ class Golem extends Boss {
   static SLAM   = 3;   // s the spikes around a slam stay
   static POUND  = Floor.TILE * 3.2; // ground pound reach, also how close the hero must be for it
   static LINE   = {tiles: 12, step: 0.07, ttl: 1.5}; // spike line: length, s between spikes, s each stays
+  static HASTE  = 1.5; // strides and charges this much faster below half health
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier);
@@ -249,6 +265,8 @@ class Golem extends Boss {
     this.stride = {t: 0, moving: false};
   }
 
+  get haste() { return this.enraged? Golem.HASTE: 1; }
+
   update(dt) {
     const {hero} = Game;
     const active = this.hunting || this.state !== 'walk';
@@ -258,7 +276,7 @@ class Golem extends Boss {
       case 'walk':
         if(!active) break;
         this.turn();
-        this.step(dt);
+        this.step(dt * this.haste);
         if(this.timer <= 0) this.choose();
         break;
       case 'windup':
@@ -277,7 +295,7 @@ class Golem extends Boss {
         this.set('recover');
         break;
       case 'charge':
-        this.charge(dt);
+        this.charge(dt * this.haste);
         break;
       case 'stun':
       case 'recover':
@@ -424,7 +442,7 @@ class Golem extends Boss {
 class Worm extends Boss {
   static TIMES   = {under: [1, 1.6], quick: 0.45, warn: 0.75, up: 1.8}; // s
   static ATTACKS = ['ring', 'double', 'spiral', 'fans', 'cross'];
-  static ENRAGED = {pace: 0.7, speed: 1.3}; // below half health: time multiplier, shot speed multiplier
+  static ENRAGED = {below: 0.3, pace: 0.7, speed: 1.3}; // under this share of its health: time multiplier, shot speed multiplier
   // triple: marks 3 spots one after another, then pops up at each in turn with a small ring
   // chance per surfacing (never twice in a row; low below the low health share), s between marks, first pop, s between pops,
   // s up after the last, shots per ring
@@ -459,7 +477,10 @@ class Worm extends Boss {
     Actor.prototype.update.call(this, dt);
   }
 
-  /** Time multiplier: everything runs quicker below half health */
+  /** Its fast phase starts later than the other bosses' */
+  get enraged() { return this.hp <= this.maxHp * Worm.ENRAGED.below; }
+
+  /** Time multiplier: everything runs quicker in the fast phase */
   get pace() { return this.enraged? Worm.ENRAGED.pace: 1; }
 
   /** Faster shots below half health */

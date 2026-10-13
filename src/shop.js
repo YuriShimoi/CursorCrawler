@@ -2,13 +2,14 @@
 class Shop {
   static SIZE = {along: 9, depth: 6}; // tiles with walls, the door sits on the first inner row
   static FIRE = {uses: 3, price: 12}; // campfire: half a heart per use
+  static HEART_CHANCE = 0.4;          // share of offers that may hold max health
 
   // price is per unit, before the tier markup
   static GOODS = [
     {type: 'bomb',  sprite: 'bomb',  price: 16, max: 3},
     {type: 'key',   sprite: 'key',   price: 20, max: 2},
     {type: 'item',  sprite: 'item',  price: 28, max: 1},
-    {type: 'heart', sprite: 'heart', price: 60, max: 1} // +half a max heart
+    {type: 'heart', sprite: 'heartEmpty', price: 60, max: 1} // +half a max heart, healed too
   ];
 
   /**
@@ -87,7 +88,8 @@ class Shop {
 
   /** 1 to 3 different goods with amounts, priced by their sum */
   static offer(rng, markup, stats) {
-    const goods = Shop.GOODS.filter(g => g.type !== 'heart' || stats.maxHp < Game.MAX_HP);
+    // max health shows up in fewer offers (Shop.HEART_CHANCE)
+    const goods = Shop.GOODS.filter(g => g.type !== 'heart' || (stats.maxHp < Game.MAX_HP && rng.chance(Shop.HEART_CHANCE)));
     const items = rng.shuffle([...goods]).slice(0, rng.int(1, 3)).map(g => ({...g, amount: rng.int(1, g.max)}));
     const price = Math.round(items.reduce((sum, g) => sum + g.price * g.amount, 0) * markup);
     return {items, price};

@@ -19,6 +19,7 @@ class Entity {
     key     : {sprite: 'key', pickup: true},
     item    : {sprite: 'item', pickup: true},
     bomb    : {sprite: 'bomb', pickup: true},
+    heart   : {sprite: 'heart', pickup: true},  // boss loot: max health, amount in half hearts
     spikes  : {sprite: 'spikes', hazard: true},
     crack   : {sprite: 'crackedWall', wall: true},
     door    : {sprite: 'door'},              // shop entrance on boss floors, on a floor tile

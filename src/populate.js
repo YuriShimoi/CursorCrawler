@@ -1,5 +1,8 @@
 /** Seeded placement of props, loot, traps and actors on a fresh floor */
 class Populate {
+  static LATE = {chests: 15, key: 0.6, cracks: 20, corners: 12}; // floors after which chests multiply (keys at this chance), cracked walls show up more and room corners get spikes
+  static CORNER_SPIKES = {chance: 0.25, from: 18, more: 0.45}; // chance per room corner past LATE.corners, higher past floor `from`
+
   /**
    * @param {Floor} floor - gets solid tiles, carved alcoves and new segments
    * @param {number} depth - floor number, scales loot and enemies
@@ -132,9 +135,16 @@ class Populate {
     //#endregion
 
     //#region [ LOOT ]
-    const chest = pick(canSolid);
-    if(chest) {
-      place('chest', ...chest);
+    // one chest and its key; deeper (Populate.LATE) more chests but keys only sometimes, so a key has to be chosen
+    const late = depth > Populate.LATE.chests;
+    let chests = 0;
+    for(let i = late? rng.int(2, 3): 1; i > 0; i--) {
+      const cell = pick(canSolid);
+      if(!cell) continue;
+      place('chest', ...cell);
+      chests++;
+    }
+    if(chests && (!late || rng.chance(Populate.LATE.key))) {
       const keyCell = pick(canFree);
       if(keyCell) place('key', ...keyCell);
     }
@@ -159,7 +169,8 @@ class Populate {
       const cell = pick(canFree);
       if(cell) place('bomb', ...cell);
     }
-    if(rng.chance(0.25)) {
+    // gems raise max health, so they stay rare
+    if(rng.chance(0.15)) {
       const cell = pick(canFree);
       if(cell) place('item', ...cell);
     }
@@ -185,6 +196,19 @@ class Populate {
       const lever = pick(safe(canSolid)) ?? pick(safe(canFree), rooms);
       if(lever) place('lever', ...lever);
       else floor.spikesOn = false;
+    }
+
+    // deep floors: spikes in some room corners (not the boss room), never where a passage comes in; the lever lowers them too
+    if(depth > Populate.LATE.corners) {
+      others.filter(r => r !== arena).forEach(room => {
+        const {x, y, width: w, height: h} = room.parts[0];
+        [[x, y, -1, -1], [x + w - 1, y, 1, -1], [x, y + h - 1, -1, 1], [x + w - 1, y + h - 1, 1, 1]].forEach(([cx, cy, ox, oy]) => {
+          const {chance, from, more} = Populate.CORNER_SPIKES;
+          if(!rng.chance(depth > from? more: chance) || !canFree(cx, cy)) return;
+          if(floor.isOpen(cx + ox, cy) || floor.isOpen(cx, cy + oy)) return;
+          place('spikes', cx, cy);
+        });
+      });
     }
     //#endregion
 
@@ -214,8 +238,13 @@ class Populate {
     };
 
     spawn(Math.min(2 + depth, 9), others.filter(r => r !== arena && r !== camp));
-    // monster camp: a crowd in the big room, guarding a chest that needs no key
+    // monster camp: a crowd around a campfire near the middle of the big room, guarding a chest that needs no key
     if(camp) {
+      const mid = {x: camp.x + camp.width / 2, y: camp.y + camp.height / 2};
+      const fire = cellsOf(camp)
+        .filter(([x, y]) => canSolid(x, y))
+        .sort(([ax, ay], [bx, by]) => Math.hypot(ax + 0.5 - mid.x, ay + 0.5 - mid.y) - Math.hypot(bx + 0.5 - mid.x, by + 0.5 - mid.y))[0];
+      if(fire) place('campfire', ...fire);
       const reward = pick(canSolid, [camp]);
       if(reward) place('chest', ...reward, {unlocked: true});
       spawn(Math.min(6 + depth, 16), [camp]);
@@ -262,8 +291,11 @@ class Populate {
    * Carves at most one hidden alcove behind a single wall tile, on 60% of the floors
    * @returns {{wall:{x, y}, alcove:{x, y}, reward:Object}[]}
    */
-  static secrets(floor, rng, depth, max=1) {
-    if(!rng.chance(0.6)) return [];
+  static secrets(floor, rng, depth) {
+    // deeper floors hide more of them
+    const late = depth > Populate.LATE.cracks;
+    const max = late? 2: 1;
+    if(!rng.chance(late? 0.9: 0.6)) return [];
     const tiles = floor.data.tiles;
     let candidates = [];
 

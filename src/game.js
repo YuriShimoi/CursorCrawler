@@ -5,15 +5,16 @@ class Game {
   static REACH           = 12;   // px from the cursor tip to a target
   static INVULNERABLE    = 1;    // s after taking damage
   static SHOT_COOLDOWN   = 0.3;  // s
-  static MAX_HP          = 12;   // half hearts, six hearts
+  static MAX_HP          = 40;   // half hearts, twenty hearts
   static REST_HEAL       = 2;    // half hearts a campfire gives back, one heart
   static SHOP_FADE       = 150;  // ms, shop room in and out
   static REVEAL          = 800;  // ms, darkness fading off the floor on death
   static GOBLIN_FUSE     = 1.4;  // s, goblin bombs
-  static BOX_BOMB        = 0.1;  // chance a box holds a goblin bomb, on floors that spawned goblins
+  static BOX_BOMB        = 0.2;  // chance a box holds a goblin bomb, on floors that spawned goblins
   static SLOW            = {time: 2, factor: 0.3}; // web hit: s, movement multiplier
   static AIM             = {min: 14, max: 72};  // px pull from the press point: shoots past min, clamped at max
-  static GROW_CHANCE     = 0.4;  // a gem at full health adds half a max heart, otherwise gold
+  static BOSS_LOOT       = {heart: 2, bombs: 1};          // dropped on the boss remains: max health (half hearts), bombs, plus gold
+  static PERFECT_LOOT    = {heart: 2, bombs: 2, keys: 1}; // chest for a boss beaten without a hit, plus more gold and a gem
   static GOLD_RATE       = 0.5;  // scales every coin drop
   // s held still, s, px to cracked walls, px to actors, hp at the center (falls off to 1 at the edge), s of ring
   static BOMB            = {hold: 0.8, fuse: 1.5, reach: Floor.TILE * 1.2, actorReach: Floor.TILE * 3, damage: 3, blast: 0.3};
@@ -45,6 +46,7 @@ class Game {
   static arena        = null; // boss room on boss floors
   static arenaSeal    = null; // {x, y, tile} passages walled up while fighting the boss
   static descending   = false;
+  static bossHit      = false; // the hero took damage since the arena sealed: no perfect chest
   static credits      = false; // in the credits room (Credits), shown once per run
   static run          = {};    // numbers for the death screen: coins got and spent, kills, chests opened
   static shop         = null; // open Shop, holding the dungeon floor and entities in .saved
@@ -187,6 +189,7 @@ class Game {
     // the monster camp gets the arena's full-room light too; only a boss seals it
     Game.arena = arena ?? camp;
     Game.arenaSeal = null;
+    Game.bossHit = false;
     Game.bossSeen = false;
     Game.floor.sealed = !!Game.boss;
 
@@ -406,8 +409,7 @@ class Game {
     layer.ctx.translate(offset.x, offset.y);
     Game.drawAim(layer.ctx);
     layer.ctx.globalAlpha = Game.invulnerable > 0 && Math.floor(Game.time * 12) % 2? 0.35: 1;
-    // cracked walls only show a hint, they aren't clickable
-    hero.draw(layer.ctx, Game.target !== null && Game.target.entity?.type !== 'crack');
+    hero.draw(layer.ctx, Game.target !== null);
     layer.ctx.globalAlpha = 1;
     Game.drawFloats(layer.ctx);
   }
@@ -542,9 +544,6 @@ class Game {
         return stats.hp < stats.maxHp?
           {action: 'rest', icon: 'fa-heart', enabled: true, entity: e}:
           {action: 'rest', icon: 'fa-heart', enabled: false, entity: e};
-      case 'crack':
-        // only a hint: bombs are dropped by holding the right button still
-        return {action: 'none', icon: 'fa-bomb', enabled: false, entity: e};
       case 'door':
         return {action: Game.shop? 'leave': 'enter', icon: 'fa-door-open', enabled: true, entity: e};
       case 'shopChest':
@@ -624,9 +623,19 @@ class Game {
         if(!e.unlocked) stats.keys--;
         e.opened = true;
         Game.run.chests++;
+        if(e.perfect) {
+          const {heart, bombs, keys} = Game.PERFECT_LOOT;
+          Game.give('gold', 40 + Game.depth * 5, e.cx, e.cy);
+          Game.give('heart', heart, e.cx, e.cy - 14);
+          Game.give('bomb', bombs, e.cx, e.cy - 28);
+          Game.give('key', keys, e.cx, e.cy - 42);
+          Game.give('item', 1, e.cx, e.cy - 56);
+          Game.drawFloor();
+          break;
+        }
         Game.give('gold', 10 + Game.depth * 2 + Math.floor(Math.random() * 10), e.cx, e.cy);
         if(Math.random() < 0.5)  Game.give('bomb', 1, e.cx, e.cy - 14);
-        if(Math.random() < 0.35) Game.give('item', 1, e.cx, e.cy - 28);
+        if(Math.random() < 0.2) Game.give('item', 1, e.cx, e.cy - 28);
         Game.drawFloor();
         break;
 
@@ -651,14 +660,9 @@ class Game {
 
       case 'rest': {
         const heal = Math.min(Game.REST_HEAL, stats.maxHp - stats.hp);
-        e.used = true;
         stats.hp += heal;
         Game.float(`+${Game.hearts(heal)}`, hero.x, hero.y - 12, '#ff5555');
-        // the fire burns out: unlit sprite, its light goes away
-        Game.light.sources = Game.light.sources.filter(s => s !== e.source);
-        e.source = null;
-        e.light = 0;
-        Game.drawFloor();
+        Game.douse(e);
         break;
       }
     }
@@ -687,25 +691,18 @@ class Game {
         Game.float('+bomb', x, y, '#8be9fd');
         break;
       case 'heart':
-        // shop: half a max heart; full health stays full, otherwise the new heart comes empty (no healing)
-        if(stats.hp >= stats.maxHp) stats.hp = Math.min(Game.MAX_HP, stats.hp + amount);
-        stats.maxHp = Math.min(Game.MAX_HP, stats.maxHp + amount);
-        Game.float(`+${Game.hearts(amount)} max`, x, y, '#ff5555');
+      case 'item': {
+        // health items add max health and heal the same amount (gem: half a heart); with nothing left to give, gold
+        const grow = Math.min(amount, Game.MAX_HP - stats.maxHp);
+        stats.maxHp += grow;
+        const heal = Math.min(amount, stats.maxHp - stats.hp);
+        stats.hp += heal;
+        const color = type === 'item'? '#8be9fd': '#ff5555';
+        if(grow) Game.float(`+${Game.hearts(grow)} max`, x, y, color);
+        else if(heal) Game.float(`+${Game.hearts(heal)}`, x, y, color);
+        else Game.give('gold', 15 * amount, x, y);
         break;
-      case 'item':
-        // gem heals a heart; when already full it sometimes adds half a heart, otherwise gold
-        if(stats.hp < stats.maxHp) {
-          const heal = Math.min(2, stats.maxHp - stats.hp);
-          stats.hp += heal;
-          Game.float(`+${Game.hearts(heal)}`, x, y, '#8be9fd');
-        }
-        else if(stats.maxHp < Game.MAX_HP && Math.random() < Game.GROW_CHANCE) {
-          stats.maxHp++;
-          stats.hp++;
-          Game.float(`+${Game.hearts(1)} max`, x, y, '#8be9fd');
-        }
-        else Game.give('gold', 15, x, y);
-        break;
+      }
     }
     Gui.stats(stats);
   }
@@ -721,13 +718,38 @@ class Game {
     return `${halves} ♥`;
   }
 
-  /** Breaks a jar or box: by hand, a hero bomb, or a hero shot (jars only) */
-  static smash(e) {
+  /** Breaks a jar or box: by hand, a bomb, or a hero shot (jars only); goblin bombs leave no loot */
+  static smash(e, loot=true) {
     Sound.play('break');
     e.alive = false;
     Effects.shatter(e);
-    Game.dropFrom(e);
+    if(loot) Game.dropFrom(e);
     Game.drawFloor();
+  }
+
+  /** Puts out a lit torch (it can be lit again) or a campfire (it burns out for good, healing no one) */
+  static douse(e) {
+    if(e.type === 'torch') {
+      if(!e.lit) return;
+      e.lit = false;
+    }
+    else {
+      if(e.used) return;
+      e.used = true;
+      e.light = 0;
+    }
+    Game.light.sources = Game.light.sources.filter(s => s !== e.source);
+    e.source = null;
+    Game.drawFloor();
+  }
+
+  /** What any blast does to props in reach: torches and campfires go out, jars and boxes break */
+  static blastProps(x, y, radius, loot) {
+    for(const e of Game.entities) {
+      if(!e.alive || e.distanceTo(x, y) > radius) continue;
+      if(e.type === 'torch' || e.type === 'campfire') Game.douse(e);
+      if(e.type === 'jar' || e.type === 'box') Game.smash(e, loot);
+    }
   }
 
   /** Loot from a broken jar (coins only) or box */
@@ -745,7 +767,7 @@ class Game {
     }
     if(roll < 0.45)      Game.give('gold', 1 + Math.floor(Math.random() * (2 + Game.depth)), e.cx, e.cy);
     else if(roll < 0.55) Game.give('bomb', 1, e.cx, e.cy);
-    else if(roll < 0.63) Game.give('item', 1, e.cx, e.cy);
+    else if(roll < 0.59) Game.give('item', 1, e.cx, e.cy);
     else Game.float('empty', e.cx, e.cy, '#6272a4');
   }
 
@@ -754,6 +776,7 @@ class Game {
     const {stats, hero} = Game;
 
     stats.hp -= damage;
+    if(Game.arenaSeal) Game.bossHit = true;
     Game.invulnerable = Game.INVULNERABLE;
     Game.float(`-${Game.hearts(damage)}`, hero.x, hero.y - 12, '#ff5555');
     Gui.stats(stats);
@@ -769,8 +792,7 @@ class Game {
     Effects.death(actor);
     Sound.play(actor instanceof Boss? 'boss': 'kill');
     if(actor instanceof Boss) {
-      Game.give('gold', 30 + Game.depth * 3, actor.cx, actor.cy);
-      Game.give('item', 1, actor.cx, actor.cy - 16);
+      Game.bossLoot(actor);
       Game.float('the stairs are free', actor.cx, actor.cy - 32, '#50fa7b');
       Game.floor.sealed = false;
       Game.unsealArena();
@@ -780,7 +802,37 @@ class Game {
     else if(!actor.small && Math.random() < 0.6) Game.give('gold',1 + Math.floor(Math.random() * 3), actor.cx, actor.cy);
   }
 
-  /** Raised spikes hurt walking actors too, once per second (bosses and flyers are spared) */
+  /**
+   * Loot left on the boss remains, picked up by walking over it; a fight without a hit adds a chest with better loot
+   * Spread on the free floor tiles nearest to where the boss fell
+   */
+  static bossLoot(boss) {
+    const {floor} = Game;
+    const T = Floor.TILE;
+    const center = floor.tileAt(boss.cx, boss.cy);
+    let spots = [];
+    for(let dy = -2; dy <= 2; dy++)
+      for(let dx = -2; dx <= 2; dx++) {
+        const x = center.x + dx, y = center.y + dy;
+        if(floor.tile(x, y) !== Tile.FLOOR || Game.entities.some(e => e.alive && e.tx === x && e.ty === y)) continue;
+        spots.push({x, y, d: Math.hypot((x + 0.5) * T - boss.cx, (y + 0.5) * T - boss.cy)});
+      }
+    spots.sort((a, b) => a.d - b.d);
+
+    const {heart, bombs} = Game.BOSS_LOOT;
+    const drops = [['heart', heart], ['gold', 30 + Game.depth * 3], ['bomb', bombs]];
+    if(!Game.bossHit) drops.push(['chest', 0]);
+    drops.forEach(([type, amount], i) => {
+      const spot = spots[i];
+      if(!spot) return Game.give(type === 'chest'? 'item': type, amount || 1, boss.cx, boss.cy);
+      if(type !== 'chest') return Game.entities.push(new Entity(type, spot.x, spot.y, {amount}));
+      const chest = new Entity('chest', spot.x, spot.y, {unlocked: true, perfect: true});
+      Game.entities.push(chest);
+      Game.float('perfect!', chest.cx, chest.cy - 20, '#f1fa8c');
+    });
+  }
+
+  /** Raised spikes kill walking actors outright (bosses and flyers are spared) */
   static spikeActors(dt) {
     const {floor} = Game;
     for(const a of Game.actors) {
@@ -789,9 +841,8 @@ class Game {
 
       const tile = floor.tileAt(a.cx, a.cy);
       if(!Game.entities.some(e => e.alive && e.hazard && (floor.spikesOn || e.always) && e.tx === tile.x && e.ty === tile.y)) continue;
-      a.hit(1, a.cx, a.cy, 'spikes');
+      a.hit(a.hp, a.cx, a.cy, 'spikes');
       a.spikeTimer = 1;
-      if(Game.light.isLit(a.cx, a.cy)) Game.float('-1', a.cx, a.cy - 14, '#ff5555');
       if(!a.alive) Game.kill(a);
     }
   }
@@ -831,6 +882,7 @@ class Game {
     for(let x = a.x; x < a.x + a.width; x++) ring.push({x, y: a.y - 1}, {x, y: a.y + a.height});
     for(let y = a.y; y < a.y + a.height; y++) ring.push({x: a.x - 1, y}, {x: a.x + a.width, y});
 
+    Game.bossHit = false;
     Game.arenaSeal = ring.filter(t => floor.isOpen(t.x, t.y)).map(t => ({...t, tile: floor.tile(t.x, t.y)}));
     if(!Game.arenaSeal.length) return;
     floor.set(Game.arenaSeal.map(t => ({...t, tile: Tile.WALL})));
@@ -919,7 +971,10 @@ class Game {
     Game.blasts = Game.blasts.filter(b => b.t < Game.BOMB.blast);
   }
 
-  /** Hero bombs hurt actors, break jars and boxes and open cracked walls in reach, never the hero; goblin bombs only hurt the hero */
+  /**
+   * Hero bombs hurt actors, break jars and boxes and open cracked walls in reach, never the hero;
+   * goblin bombs hurt anyone in a small reach and break jars and boxes there without loot. Both put out torches and campfires
+   */
   static explode(b) {
     const {reach, actorReach, damage} = Game.BOMB;
     Sound.play('bomb');
@@ -934,6 +989,7 @@ class Game {
         a.hit(b.damage, b.x, b.y, 'blast');
         if(!a.alive) Game.kill(a);
       });
+      Game.blastProps(b.x, b.y, reach, false);
       return;
     }
 
@@ -954,9 +1010,7 @@ class Game {
     Game.entities
       .filter(e => e.alive && e.type === 'crack' && e.distanceTo(b.x, b.y) <= reach)
       .forEach(e => Game.openCrack(e));
-    Game.entities
-      .filter(e => e.alive && (e.type === 'jar' || e.type === 'box') && e.distanceTo(b.x, b.y) <= actorReach)
-      .forEach(e => Game.smash(e));
+    Game.blastProps(b.x, b.y, actorReach, true);
   }
 
   /** Goblin bomb landing on the tile of a point, its blast area shown on the ground */

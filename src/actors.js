@@ -412,6 +412,7 @@ class Skeleton extends Enemy {
 /** Beholder, and the base of every boss: keeps its distance and fires volleys in changing patterns, bigger below half health */
 class Boss extends Actor {
   static HP       = 12;
+  static HP_TIER  = 0.4;  // extra share of the base hp per tier (was half)
   static SIGHT    = Floor.TILE * 10;
   static SPEED    = 26;
   static KEEP     = Floor.TILE * 3;
@@ -420,9 +421,9 @@ class Boss extends Actor {
   static DAMAGE   = 0.75; // extra half hearts per tier, rounded: tiers 1-6 hit for 2, 3, 3, 4, 5, 6
   static LUNGE    = {every: [3, 6], time: 0.6, speed: 150}; // beholder only: s between, s and px/s of the dash
 
-  /** @param {number} tier - Actor.tier: +half hp and +DAMAGE (rounded) damage per tier */
+  /** @param {number} tier - Actor.tier: +HP_TIER of the hp and +DAMAGE (rounded) damage per tier */
   constructor(cx, cy, tier=0) {
-    super(cx, cy, {hp: Boss.HP + tier * Boss.HP / 2, half: 28, sprite: 'beholder', tiles: 2, damage: 1 + Math.round(tier * Boss.DAMAGE)});
+    super(cx, cy, {hp: Math.round(Boss.HP * (1 + tier * Boss.HP_TIER)), half: 28, sprite: 'beholder', tiles: 2, damage: 1 + Math.round(tier * Boss.DAMAGE)});
     this.name = 'Beholder'; // shown on the boss bar; other bosses set their own
     this.tier = tier;
     this.reload = Boss.RELOAD;
@@ -440,7 +441,7 @@ class Boss extends Actor {
 
   /** Base hp for this boss, scaled by tier like the beholder */
   setHp(base) {
-    this.hp = this.maxHp = base + this.tier * base / 2;
+    this.hp = this.maxHp = Math.round(base * (1 + this.tier * Boss.HP_TIER));
   }
 
   get enraged() { return this.hp <= this.maxHp / 2; }
