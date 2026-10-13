@@ -163,6 +163,11 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - The shop shows max health with the empty heart icon (heartEmpty).
 - Slime King dashes more when desperate: at or below 20% health a wall bounce turns into a dash at the hero 75% of the time (SlimeKing.DASH.low / desperate), 40% otherwise.
 - Golem moves 1.5x faster below half health: its strides and charges run on a faster clock (Golem.HASTE, haste getter); windups, stuns and attack timings are unchanged.
+- Slime King drops a small slime every 2s below half health (SlimeKing.SPAWN), still capped at 8 living slimes; hit splits and these share SlimeKing.spawn.
+- Gems add max health only half the time (Game.GEM_GROW 0.5), otherwise they just heal half a heart (gold when already full). This was not a bug: gems had been set to always add max health. The shop's max health good shows in 25% of offers (Shop.HEART_CHANCE 0.4 -> 0.25).
+- Boss loot gives the max health heart only 30% of the time (Game.BOSS_LOOT.heartChance); gold and a bomb always drop. The perfect chest is unlocked, so it never uses a key.
+- Chests that need no key (camp, alcove, perfect and mimic chests) show an open lock icon (fa-lock-open) in the popover instead of the key; also listed in the style doc popovers.
+- Mimics no longer wake when the hero comes close: a mimic chest stays a harmless chest until it is clicked (the 'open' action wakes it instead of opening), shot (the shot wakes it and lands) or bombed.
 
 ## 2026-10-11 - Death backdrop and fades
 

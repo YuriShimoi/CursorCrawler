@@ -13,7 +13,8 @@ class Game {
   static BOX_BOMB        = 0.2;  // chance a box holds a goblin bomb, on floors that spawned goblins
   static SLOW            = {time: 2, factor: 0.3}; // web hit: s, movement multiplier
   static AIM             = {min: 14, max: 72};  // px pull from the press point: shoots past min, clamped at max
-  static BOSS_LOOT       = {heart: 2, bombs: 1};          // dropped on the boss remains: max health (half hearts), bombs, plus gold
+  static GEM_GROW        = 0.5;  // chance a gem also adds max health, otherwise it only heals
+  static BOSS_LOOT       = {heart: 2, heartChance: 0.3, bombs: 1}; // dropped on the boss remains: max health (half hearts, sometimes), bombs, plus gold
   static PERFECT_LOOT    = {heart: 2, bombs: 2, keys: 1}; // chest for a boss beaten without a hit, plus more gold and a gem
   static GOLD_RATE       = 0.5;  // scales every coin drop
   // s held still, s, px to cracked walls, px to actors, hp at the center (falls off to 1 at the edge), s of ring
@@ -374,10 +375,6 @@ class Game {
     Gui.boss(Game.bossSeen? boss: null);
 
     Game.target = Game.findTarget();
-    if(Game.target?.entity?.mimic) {
-      Game.wakeMimic(Game.target.entity);
-      Game.target = null;
-    }
     Gui.popover(Game.target, hero.x + Game.offset.x, hero.y + Game.offset.y);
   }
 
@@ -528,9 +525,10 @@ class Game {
     switch(e.type) {
       case 'chest':
         if(e.opened) return null;
-        return e.unlocked || stats.keys?
-          {action: 'open', icon: 'fa-key', enabled: true, entity: e}:
-          {action: 'open', icon: 'fa-key', enabled: false, entity: e};
+        // chests that need no key show an open lock
+        return e.unlocked?
+          {action: 'open', icon: 'fa-lock-open', enabled: true, entity: e}:
+          {action: 'open', icon: 'fa-key', enabled: stats.keys > 0, entity: e};
       case 'jar':
       case 'box':
         return {action: 'break', icon: 'fa-hand-fist', enabled: true, entity: e};
@@ -619,6 +617,11 @@ class Game {
         break;
 
       case 'open':
+        // a mimic waits as a harmless chest until it's clicked or hurt
+        if(e.mimic) {
+          Game.wakeMimic(e);
+          break;
+        }
         Sound.play('open');
         if(!e.unlocked) stats.keys--;
         e.opened = true;
@@ -692,8 +695,9 @@ class Game {
         break;
       case 'heart':
       case 'item': {
-        // health items add max health and heal the same amount (gem: half a heart); with nothing left to give, gold
-        const grow = Math.min(amount, Game.MAX_HP - stats.maxHp);
+        // health items add max health and heal the same amount (gem: half a heart, max health only GEM_GROW of the time);
+        // with nothing left to give, gold
+        const grow = type === 'item' && Math.random() >= Game.GEM_GROW? 0: Math.min(amount, Game.MAX_HP - stats.maxHp);
         stats.maxHp += grow;
         const heal = Math.min(amount, stats.maxHp - stats.hp);
         stats.hp += heal;
@@ -819,8 +823,9 @@ class Game {
       }
     spots.sort((a, b) => a.d - b.d);
 
-    const {heart, bombs} = Game.BOSS_LOOT;
-    const drops = [['heart', heart], ['gold', 30 + Game.depth * 3], ['bomb', bombs]];
+    const {heart, heartChance, bombs} = Game.BOSS_LOOT;
+    const drops = [['gold', 30 + Game.depth * 3], ['bomb', bombs]];
+    if(Math.random() < heartChance) drops.unshift(['heart', heart]);
     if(!Game.bossHit) drops.push(['chest', 0]);
     drops.forEach(([type, amount], i) => {
       const spot = spots[i];
@@ -1081,7 +1086,7 @@ class Game {
     if(changed) Game.drawFloor();
   }
 
-  /** A hovered (or bombed) mimic chest jumps out */
+  /** A mimic chest jumps out when clicked, shot or bombed */
   static wakeMimic(e) {
     e.alive = false;
     Game.drawFloor();

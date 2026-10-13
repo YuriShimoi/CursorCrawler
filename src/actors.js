@@ -593,7 +593,9 @@ class Projectile {
       return;
     }
 
-    const actor = Game.actors.find(a => a.alive && a.hittable && a.distanceTo(this.x, this.y) <= 2);
+    // a shot sleeping mimic wakes up hurt
+    const mimic = Game.entities.find(e => e.alive && e.mimic && e.distanceTo(this.x, this.y) <= 2);
+    const actor = mimic? Game.wakeMimic(mimic): Game.actors.find(a => a.alive && a.hittable && a.distanceTo(this.x, this.y) <= 2);
     if(!actor) return;
     actor.hit(this.damage, this.x - this.vx, this.y - this.vy, 'shot');
     if(!actor.alive) Game.kill(actor);

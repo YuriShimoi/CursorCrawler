@@ -347,7 +347,7 @@
           if(taken.length >= amount) break;
           if(taken.some(t => Math.hypot(t.x - spot.x, t.y - spot.y) < gap)) continue;
           taken.push(spot);
-          // mimics wait as chests, like in a run (walkable, no collision); hovering one wakes it (Game.wakeMimic)
+          // mimics wait as chests, like in a run (walkable, no collision); clicking, shooting or bombing one wakes it (Game.wakeMimic)
           if(kind === Mimic)
             entities.push(new Entity('chest', Math.floor(spot.x), Math.floor(spot.y), {mimic: true, unlocked: true}));
           else actors.push(new kind(spot.x * T, spot.y * T, Actor.tier(depth)));

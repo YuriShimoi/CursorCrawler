@@ -164,6 +164,7 @@ class SlimeKing extends Boss {
   // on a wall bounce, at the hero in reach, until the next wall; `desperate` chance at or below `low` of its health
   static DASH   = {chance: 0.4, low: 0.2, desperate: 0.75, reach: Floor.TILE * 12, boost: 2.2};
   static WILD   = {after: 2, chance: 0.3}; // s of plain walking after a bounce, then maybe a dash in a random direction
+  static SPAWN  = {below: 0.5, every: 2};   // under this health share it drops a small slime every this many s
 
   constructor(cx, cy, tier=0) {
     super(cx, cy, tier);
@@ -176,6 +177,7 @@ class SlimeKing extends Boss {
     this.dashing = false;
     this.walked = 0;     // s of plain walking since the last bounce
     this.rolled = false; // the wild dash was already rolled for this bounce
+    this.spawnTimer = SlimeKing.SPAWN.every;
   }
 
   update(dt) {
@@ -191,6 +193,11 @@ class SlimeKing extends Boss {
       if(this.fits(nx, this.cy)) this.cx = nx; else { this.vx *= -1; bounced = true; }
       if(this.fits(this.cx, ny)) this.cy = ny; else { this.vy *= -1; bounced = true; }
       if(bounced) this.bounce();
+
+      if(left < SlimeKing.SPAWN.below && (this.spawnTimer -= dt) <= 0) {
+        this.spawnTimer = SlimeKing.SPAWN.every;
+        this.spawn(true);
+      }
     }
     Actor.prototype.update.call(this, dt);
   }
@@ -221,11 +228,15 @@ class SlimeKing extends Boss {
   hit(damage, fromX, fromY, kind='shot') {
     this.hp -= damage;
     this.flash = 0.25;
-    if(!this.alive || Game.actors.filter(a => a instanceof Slime && a.alive).length >= SlimeKing.SLIMES) return;
+    if(this.alive) this.spawn(this.hp / this.maxHp >= SlimeKing.BIG);
+  }
+
+  /** A slime on its tile, up to the SLIMES cap */
+  spawn(small) {
+    if(Game.actors.filter(a => a instanceof Slime && a.alive).length >= SlimeKing.SLIMES) return;
     const T = Floor.TILE;
     const tile = Game.floor.tileAt(this.cx, this.cy);
-    const big = this.hp / this.maxHp < SlimeKing.BIG;
-    const slime = new Slime((tile.x + 0.5) * T, (tile.y + 0.5) * T, this.tier, !big);
+    const slime = new Slime((tile.x + 0.5) * T, (tile.y + 0.5) * T, this.tier, small);
     slime.called = true; // its slimes never call more
     slime.provoke();
     Game.actors.push(slime);

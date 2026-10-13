@@ -2,7 +2,7 @@
 class Shop {
   static SIZE = {along: 9, depth: 6}; // tiles with walls, the door sits on the first inner row
   static FIRE = {uses: 3, price: 12}; // campfire: half a heart per use
-  static HEART_CHANCE = 0.4;          // share of offers that may hold max health
+  static HEART_CHANCE = 0.25;          // share of offers that may hold max health
 
   // price is per unit, before the tier markup
   static GOODS = [
